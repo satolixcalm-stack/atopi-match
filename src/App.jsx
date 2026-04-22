@@ -37,11 +37,11 @@ export default function App() {
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // 未認証ユーザーは即座にログアウトしてauth画面に戻す
         if (!user.emailVerified) {
+          unverifiedRef.current = true;
           await signOut(auth);
-          setAuthError("メールアドレスの確認が完了していません。届いたメールのリンクをクリックしてからログインしてください。");
-          setScreen("auth");
-          return;
+          return; // ここで終了、setScreenはsignOut後のonAuthStateChangedで処理
         }
         setCurrentUser(user);
         const snap = await get(ref(db, `users/${user.uid}`));
@@ -83,6 +83,7 @@ export default function App() {
   };
 
   const [verificationSent, setVerificationSent] = useState(false);
+  const unverifiedRef = { current: false };
 
   const handleAuth = async () => {
     setAuthError(""); setAuthLoading(true);
