@@ -158,23 +158,21 @@ export default function AtopiMatch() {
     setLikeLoading(false);
   };
 
-  const chatListenerRef = useRef(null);
+  const chatIdRef = useRef(null);
 
   const openChat = (target) => {
-    // 既存のリスナーを解除
-    if (chatListenerRef.current) {
-      off(chatListenerRef.current);
-    }
     setChatTarget(target);
     setMessages([]);
     const chatId = getChatId(currentUser.uid, target.uid);
+    chatIdRef.current = chatId;
     const chatRef = ref(db, `chats/${chatId}/messages`);
-    chatListenerRef.current = chatRef;
+    off(chatRef);
     onValue(chatRef, snap => {
-      if (!snap.exists()) { setMessages([]); return; }
       const msgs = [];
-      snap.forEach(child => msgs.push({ id: child.key, ...child.val() }));
-      setMessages(msgs);
+      if (snap.exists()) {
+        snap.forEach(child => msgs.push({ id: child.key, ...child.val() }));
+      }
+      setMessages(msgs.slice());
     });
     setScreen("chat");
   };
