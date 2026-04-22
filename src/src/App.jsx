@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import ChatScreen from "./ChatScreen.jsx";
+import Chat from "./Chat.jsx";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, push, onValue, set, get, serverTimestamp, off } from "firebase/database";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
@@ -174,7 +176,6 @@ export default function AtopiMatch() {
   };
 
   const openChat = (target) => {
-    setMessages([]);
     setChatTarget(target);
     setScreen("chat");
   };
@@ -397,43 +398,14 @@ export default function AtopiMatch() {
     </div>
   );
 
-  if (screen === "chat") return (
+  if (screen === "chat" && chatTarget) return (
     <div style={S.app}>
-      <div style={{ ...S.pageWrap, height: "100vh" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "#fff", boxShadow: "0 1px 8px rgba(61,107,79,0.07)", flexShrink: 0 }}>
-          <button style={{ background: "none", border: "none", fontSize: 20, color: "#6b8f71", cursor: "pointer" }} onClick={() => { setScreen("matches"); setChatTarget(null); setMessages([]); }}>←</button>
-          <div style={{ fontSize: 30, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", background: "#f0f7f2", borderRadius: "50%" }}>{chatTarget?.avatar}</div>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#3d6b4f" }}>{chatTarget?.name}</div>
-            <div style={{ fontSize: 11, color: "#52a875" }}>● オンライン</div>
-          </div>
-        </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-          {messages.length === 0 && (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
-              <div style={{ fontSize: 40 }}>{chatTarget?.avatar}</div>
-              <p style={{ color: "#6b8f71", fontSize: 13, marginTop: 8 }}>{chatTarget?.name}さんとマッチしました！<br />最初のメッセージを送ってみましょう 💚</p>
-            </div>
-          )}
-          {messages.map((m, i) => {
-            const isMe = m.senderUid === currentUser?.uid;
-            return (
-              <div key={m.id || i} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", alignItems: "flex-end", gap: 6 }}>
-                {!isMe && <div style={{ fontSize: 22, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", background: "#f0f7f2", borderRadius: "50%", flexShrink: 0 }}>{chatTarget?.avatar}</div>}
-                <div style={isMe ? S.bubMe : S.bubThem}>{m.text}</div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-        <div style={{ display: "flex", gap: 8, padding: "10px 14px", background: "#fff", borderTop: "1px solid #e8f5e9", flexShrink: 0 }}>
-          <input style={{ flex: 1, border: "1.5px solid #c8e6c9", borderRadius: 22, padding: "10px 16px", fontSize: 14, background: "#f0f7f2", outline: "none" }}
-            placeholder="メッセージを入力..." value={chatInput}
-            onChange={e => setChatInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && sendMessage()} />
-          <button style={S.sendBtn} onClick={sendMessage}>送信</button>
-        </div>
-      </div>
+      <ChatScreen
+        currentUser={currentUser}
+        myProfile={myProfile}
+        chatTarget={chatTarget}
+        onBack={() => { setScreen("matches"); setChatTarget(null); }}
+      />
     </div>
   );
 
