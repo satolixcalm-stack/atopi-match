@@ -83,6 +83,21 @@ export default function AtopiMatch() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    if (screen !== "chat" || !chatTarget || !currentUser) return;
+    const chatId = getChatId(currentUser.uid, chatTarget.uid);
+    const chatRef = ref(db, `chats/${chatId}/messages`);
+    setMessages([]);
+    const unsub = onValue(chatRef, snap => {
+      const msgs = [];
+      if (snap.exists()) {
+        snap.forEach(child => msgs.push({ id: child.key, ...child.val() }));
+      }
+      setMessages(msgs);
+    });
+    return () => off(chatRef);
+  }, [screen, chatTarget, currentUser]);
+
   const loadAllProfiles = async (myUid) => {
     const snap = await get(ref(db, "users"));
     if (!snap.exists()) return;
@@ -158,22 +173,9 @@ export default function AtopiMatch() {
     setLikeLoading(false);
   };
 
-  const chatIdRef = useRef(null);
-
   const openChat = (target) => {
-    setChatTarget(target);
     setMessages([]);
-    const chatId = getChatId(currentUser.uid, target.uid);
-    chatIdRef.current = chatId;
-    const chatRef = ref(db, `chats/${chatId}/messages`);
-    off(chatRef);
-    onValue(chatRef, snap => {
-      const msgs = [];
-      if (snap.exists()) {
-        snap.forEach(child => msgs.push({ id: child.key, ...child.val() }));
-      }
-      setMessages(msgs.slice());
-    });
+    setChatTarget(target);
     setScreen("chat");
   };
 
