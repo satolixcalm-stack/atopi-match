@@ -45,6 +45,9 @@ export default function App() {
   const [timelineInput, setTimelineInput] = useState("");
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [browseTimeline, setBrowseTimeline] = useState([]);
+  const [timelinePage, setTimelinePage] = useState(0);
+  const [browseTimelinePage, setBrowseTimelinePage] = useState(0);
+  const PAGE_SIZE = 5;
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
@@ -195,6 +198,7 @@ export default function App() {
     }
     setBrowseIndex(i => i + 1);
     setBrowseTimeline([]);
+    setBrowseTimelinePage(0);
     setLikeLoading(false);
   };
 
@@ -349,12 +353,25 @@ export default function App() {
                   <>
                     <div style={S.secLabel}>📝 タイムライン</div>
                     <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                      {browseTimeline.map(t => (
+                      {browseTimeline.slice(browseTimelinePage*PAGE_SIZE,(browseTimelinePage+1)*PAGE_SIZE).map(t => (
                         <div key={t.id} style={{ fontSize:13,color:"#4a6b54",padding:"8px 12px",background:"#f0f7f2",borderRadius:10,lineHeight:1.6 }}>
                           <div>{t.text}</div>
                           <div style={{ fontSize:10,color:"#a8c5b0",marginTop:3 }}>{new Date(t.createdAt).toLocaleDateString("ja-JP")}</div>
                         </div>
                       ))}
+                      {browseTimeline.length > PAGE_SIZE && (
+                        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:2 }}>
+                          <button onClick={() => setBrowseTimelinePage(p => Math.max(0,p-1))} disabled={browseTimelinePage===0}
+                            style={{ background:browseTimelinePage===0?"#e8f5e9":"#52a875",color:browseTimelinePage===0?"#a8c5b0":"#fff",border:"none",borderRadius:10,padding:"5px 12px",fontSize:11,cursor:browseTimelinePage===0?"default":"pointer" }}>
+                            ← 新しい
+                          </button>
+                          <span style={{ fontSize:11,color:"#a8c5b0" }}>{browseTimelinePage+1} / {Math.ceil(browseTimeline.length/PAGE_SIZE)}</span>
+                          <button onClick={() => setBrowseTimelinePage(p => Math.min(Math.ceil(browseTimeline.length/PAGE_SIZE)-1,p+1))} disabled={browseTimelinePage>=Math.ceil(browseTimeline.length/PAGE_SIZE)-1}
+                            style={{ background:browseTimelinePage>=Math.ceil(browseTimeline.length/PAGE_SIZE)-1?"#e8f5e9":"#52a875",color:browseTimelinePage>=Math.ceil(browseTimeline.length/PAGE_SIZE)-1?"#a8c5b0":"#fff",border:"none",borderRadius:10,padding:"5px 12px",fontSize:11,cursor:browseTimelinePage>=Math.ceil(browseTimeline.length/PAGE_SIZE)-1?"default":"pointer" }}>
+                            古い →
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -441,13 +458,26 @@ export default function App() {
             <button style={S.btn} onClick={postTimeline} disabled={timelineLoading}>{timelineLoading?"投稿中...":"投稿する"}</button>
             <div style={{ marginTop:16,display:"flex",flexDirection:"column",gap:10 }}>
               {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
-              {myTimeline.map(t => (
+              {myTimeline.slice(timelinePage*PAGE_SIZE, (timelinePage+1)*PAGE_SIZE).map(t => (
                 <div key={t.id} style={{ padding:"10px 14px",background:"#f0f7f2",borderRadius:12,position:"relative" }}>
                   <div style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,paddingRight:20 }}>{t.text}</div>
                   <div style={{ fontSize:10,color:"#a8c5b0",marginTop:4 }}>{new Date(t.createdAt).toLocaleDateString("ja-JP")}</div>
                   <button onClick={() => deleteTimeline(t.id)} style={{ position:"absolute",top:8,right:8,background:"none",border:"none",color:"#e57373",fontSize:14,cursor:"pointer" }}>✕</button>
                 </div>
               ))}
+              {myTimeline.length > PAGE_SIZE && (
+                <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4 }}>
+                  <button onClick={() => setTimelinePage(p => Math.max(0,p-1))} disabled={timelinePage===0}
+                    style={{ background:timelinePage===0?"#e8f5e9":"#52a875",color:timelinePage===0?"#a8c5b0":"#fff",border:"none",borderRadius:10,padding:"6px 14px",fontSize:12,cursor:timelinePage===0?"default":"pointer" }}>
+                    ← 新しい
+                  </button>
+                  <span style={{ fontSize:11,color:"#a8c5b0" }}>{timelinePage+1} / {Math.ceil(myTimeline.length/PAGE_SIZE)}</span>
+                  <button onClick={() => setTimelinePage(p => Math.min(Math.ceil(myTimeline.length/PAGE_SIZE)-1,p+1))} disabled={timelinePage>=Math.ceil(myTimeline.length/PAGE_SIZE)-1}
+                    style={{ background:timelinePage>=Math.ceil(myTimeline.length/PAGE_SIZE)-1?"#e8f5e9":"#52a875",color:timelinePage>=Math.ceil(myTimeline.length/PAGE_SIZE)-1?"#a8c5b0":"#fff",border:"none",borderRadius:10,padding:"6px 14px",fontSize:12,cursor:timelinePage>=Math.ceil(myTimeline.length/PAGE_SIZE)-1?"default":"pointer" }}>
+                    古い →
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
