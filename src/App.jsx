@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { db, auth } from "./firebase.js";
 import { ref, set, get, onValue, push, serverTimestamp } from "firebase/database";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
 import ChatScreen from "./ChatScreen.jsx";
 
 const SEVERITY = ["軽症", "中等症", "重症", "寛解中"];
@@ -70,11 +70,24 @@ export default function App() {
     });
   };
 
+  const [verificationSent, setVerificationSent] = useState(false);
+
   const handleAuth = async () => {
     setAuthError(""); setAuthLoading(true);
     try {
-      if (authMode === "register") await createUserWithEmailAndPassword(auth, authEmail, authPassword);
-      else await signInWithEmailAndPassword(auth, authEmail, authPassword);
+      if (authMode === "register") {
+        const result = await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+        await sendEmailVerification(result.user);
+        await signOut(auth);
+        setVerificationSent(true);
+      } else {
+        const result = await signInWithEmailAndPassword(auth, authEmail, authPassword);
+        if (!result.user.emailVerified) {
+          await signOut(auth);
+          setAuthError("メールアドレスの確認が完了していません。届いたメールのリンクをクリックしてください。");
+          return;
+        }
+      }
     } catch (e) {
       const msgs = { "auth/email-already-in-use": "このメールアドレスは既に使われています", "auth/invalid-email": "メールアドレスの形式が正しくありません", "auth/weak-password": "パスワードは6文字以上にしてください", "auth/invalid-credential": "メールアドレスまたはパスワードが違います" };
       setAuthError(msgs[e.code] || "エラーが発生しました");
@@ -129,6 +142,31 @@ export default function App() {
       </div>
     );
   }
+
+  // ── メール確認待ち画面 ──
+  if (verificationSent) return (
+    <div style={S.app}>
+      <div style={{ width: "100%", maxWidth: 400, padding: "48px 20px" }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 52 }}>🌿</div>
+          <h1 style={{ fontSize: 30, fontWeight: 800, color: "#3d6b4f", margin: "4px 0 0" }}>AtopiMatch</h1>
+        </div>
+        <div style={S.card}>
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📧</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: "#3d6b4f", margin: "0 0 8px" }}>確認メールを送りました</h2>
+            <p style={{ color: "#6b8f71", fontSize: 14, lineHeight: 1.7 }}>
+              <strong>{authEmail}</strong> に確認メールを送りました。<br />
+              メール内のリンクをクリックしてから、ログインしてください。
+            </p>
+          </div>
+          <button style={S.btn} onClick={() => { setVerificationSent(false); setAuthMode("login"); }}>
+            ログイン画面へ
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   // ── AUTH ──
   if (screen === "auth") return (
