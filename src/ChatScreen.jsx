@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { db } from "./firebase.js";
-import { ref, push, onValue, off, serverTimestamp } from "firebase/database";
+import { ref, push, onValue, off, serverTimestamp, onDisconnect, set } from "firebase/database";
 
 function getChatId(uid1, uid2) {
   return [uid1, uid2].sort().join("_");
@@ -9,9 +9,28 @@ function getChatId(uid1, uid2) {
 export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [isOnline, setIsOnline] = useState(false);
   const bottomRef = useRef(null);
   const chatId = getChatId(currentUser.uid, chatTarget.uid);
 
+  // オンライン状態を監視
+  useEffect(() => {
+    const presenceRef = ref(db, `presence/${chatTarget.uid}`);
+    const unsub = onValue(presenceRef, (snap) => {
+      setIsOnline(snap.exists() && snap.val() === true);
+    });
+    return () => off(presenceRef);
+  }, [chatTarget.uid]);
+
+  // 自分のオンライン状態を登録
+  useEffect(() => {
+    const myPresenceRef = ref(db, `presence/${currentUser.uid}`);
+    set(myPresenceRef, true);
+    onDisconnect(myPresenceRef).set(false);
+    return () => set(myPresenceRef, false);
+  }, [currentUser.uid]);
+
+  // メッセージ監視
   useEffect(() => {
     const msgRef = ref(db, "chats/" + chatId + "/messages");
     const unsubscribe = onValue(msgRef, (snap) => {
@@ -51,7 +70,9 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack 
         <div style={{ fontSize: 28, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#f0f7f2", borderRadius: "50%" }}>{chatTarget.avatar}</div>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#3d6b4f" }}>{chatTarget.name}</div>
-          <div style={{ fontSize: 11, color: "#52a875" }}>● オンライン</div>
+          <div style={{ fontSize: 11, color: isOnline ? "#52a875" : "#aaa" }}>
+            {isOnline ? "● オンライン" : "○ オフライン"}
+          </div>
         </div>
       </div>
 
