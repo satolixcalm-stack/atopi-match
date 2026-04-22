@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { db } from "./firebase.js";
-import { ref, push, onValue, serverTimestamp } from "firebase/database";
+import { ref, push, onValue, off, serverTimestamp } from "firebase/database";
 
 function getChatId(uid1, uid2) {
   return [uid1, uid2].sort().join("_");
@@ -9,26 +9,19 @@ function getChatId(uid1, uid2) {
 export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [debugLog, setDebugLog] = useState("起動中...");
   const bottomRef = useRef(null);
   const chatId = getChatId(currentUser.uid, chatTarget.uid);
 
   useEffect(() => {
-    setDebugLog("リスナー登録: " + chatId);
     const msgRef = ref(db, "chats/" + chatId + "/messages");
-
     const unsubscribe = onValue(msgRef, (snap) => {
       const list = [];
       snap.forEach((child) => {
         list.push({ id: child.key, ...child.val() });
       });
-      setDebugLog("更新検知: " + list.length + "件 / " + new Date().toLocaleTimeString());
       setMessages(list);
-    }, (error) => {
-      setDebugLog("エラー: " + error.message);
     });
-
-    return () => unsubscribe();
+    return () => off(msgRef);
   }, [chatId]);
 
   useEffect(() => {
@@ -39,18 +32,15 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack 
     const text = input.trim();
     if (!text) return;
     setInput("");
-    const msgRef = ref(db, "chats/" + chatId + "/messages");
     try {
-      await push(msgRef, {
-        text: text,
+      await push(ref(db, "chats/" + chatId + "/messages"), {
+        text,
         senderUid: currentUser.uid,
         senderName: myProfile.name,
         timestamp: serverTimestamp(),
       });
-      setDebugLog("送信成功: " + text);
     } catch (e) {
       setInput(text);
-      setDebugLog("送信エラー: " + e.message);
     }
   };
 
@@ -59,17 +49,17 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack 
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "#fff", boxShadow: "0 1px 8px rgba(61,107,79,0.07)", flexShrink: 0 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 20, color: "#6b8f71", cursor: "pointer" }}>←</button>
         <div style={{ fontSize: 28, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "#f0f7f2", borderRadius: "50%" }}>{chatTarget.avatar}</div>
-        <div style={{ flex: 1 }}>
+        <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#3d6b4f" }}>{chatTarget.name}</div>
-          <div style={{ fontSize: 10, color: "#999" }}>{debugLog}</div>
+          <div style={{ fontSize: 11, color: "#52a875" }}>● オンライン</div>
         </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "14px", display: "flex", flexDirection: "column", gap: 8, background: "#f0f7f2" }}>
         {messages.length === 0 && (
-          <div style={{ textAlign: "center", padding: 32, color: "#6b8f71", fontSize: 13 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
             <div style={{ fontSize: 40 }}>{chatTarget.avatar}</div>
-            <p style={{ marginTop: 8 }}>最初のメッセージを送りましょう 💚</p>
+            <p style={{ color: "#6b8f71", fontSize: 13, marginTop: 8 }}>{chatTarget.name}さんとマッチ！<br />最初のメッセージを送りましょう 💚</p>
           </div>
         )}
         {messages.map((m) => {
