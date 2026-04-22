@@ -37,6 +37,12 @@ export default function App() {
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
       if (user) {
+        if (!user.emailVerified) {
+          await signOut(auth);
+          setAuthError("メールアドレスの確認が完了していません。届いたメールのリンクをクリックしてからログインしてください。");
+          setScreen("auth");
+          return;
+        }
         setCurrentUser(user);
         const snap = await get(ref(db, `users/${user.uid}`));
         if (snap.exists()) {
