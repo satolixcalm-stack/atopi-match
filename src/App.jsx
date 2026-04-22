@@ -8,7 +8,7 @@ const SEVERITY = ["軽症", "中等症", "重症", "寛解中"];
 const SKIN_CONDITIONS = ["乾燥肌", "じゅくじゅく型", "混合型", "慢性型", "季節性"];
 const TRIGGERS = ["食物アレルギー", "ストレス", "花粉", "ダニ・ホコリ", "汗", "睡眠不足", "気温変化"];
 const TREATMENTS = ["保湿剤中心", "ステロイド使用", "免疫抑制剤", "生物学的製剤", "自然療法", "食事療法"];
-const GENDERS = ["男性", "女性", "その他", "未回答"];
+const GENDERS = ["女性", "男性", "その他", "未回答"];
 const AVATARS = [
   "🌸","🌺","🌻","🌼","🌷","🌹","🌿","🍃","🍀","🌱","🌲","🎋",
   "🐱","🐶","🐰","🐼","🐨","🦊","🐸","🐧","🐺","🦁","🐮","🐻",
@@ -102,7 +102,7 @@ export default function App() {
     onValue(ref(db, "timeline/" + uid), (snap) => {
       const list = [];
       snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-      setMyTimeline(list.reverse());
+      setMyTimeline([...list].reverse());
     });
   };
 
@@ -110,7 +110,7 @@ export default function App() {
     const snap = await get(ref(db, "timeline/" + uid));
     const list = [];
     snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-    setBrowseTimeline(list.reverse());
+    setBrowseTimeline([...list].reverse());
   };
 
   const handleAuth = async () => {
@@ -346,7 +346,7 @@ export default function App() {
                   <>
                     <div style={S.secLabel}>📝 タイムライン</div>
                     <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                      {browseTimeline.slice(0,3).map(t => (
+                      {browseTimeline.map(t => (
                         <div key={t.id} style={{ fontSize:13,color:"#4a6b54",padding:"8px 12px",background:"#f0f7f2",borderRadius:10,lineHeight:1.6 }}>
                           <div>{t.text}</div>
                           <div style={{ fontSize:10,color:"#a8c5b0",marginTop:3 }}>{new Date(t.createdAt).toLocaleDateString("ja-JP")}</div>
