@@ -44,6 +44,17 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack 
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
+  // キーボードが出た時にスクロール
+  useEffect(() => {
+    const handleResize = () => {
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    };
+    window.visualViewport?.addEventListener("resize", handleResize);
+    return () => window.visualViewport?.removeEventListener("resize", handleResize);
+  }, []);
+
   const send = async () => {
     const text = input.trim();
     if (!text) return;
@@ -66,7 +77,7 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack 
       maxWidth: 420,
       display: "flex",
       flexDirection: "column",
-      height: "100dvh", // dynamic viewport height でキーボード対応
+      height: "100dvh",
       position: "fixed",
       top: 0,
       left: "50%",
@@ -86,8 +97,9 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack 
 
       {/* メッセージ一覧 */}
       <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: 8, background: "#f0f7f2" }}>
+        <div style={{ flex: 1 }} />
         {messages.length === 0 && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
             <div style={{ fontSize: 40 }}>{chatTarget.avatar}</div>
             <p style={{ color: "#6b8f71", fontSize: 13, marginTop: 8 }}>{chatTarget.name}さんとマッチ！<br />最初のメッセージを送りましょう 💚</p>
           </div>
@@ -112,7 +124,7 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack 
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && send()}
-          onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 300)}
+          onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 400)}
           placeholder="メッセージを入力..."
           style={{ flex: 1, border: "1.5px solid #c8e6c9", borderRadius: 22, padding: "10px 16px", fontSize: 14, background: "#f0f7f2", outline: "none" }}
         />
