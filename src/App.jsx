@@ -100,17 +100,19 @@ export default function App() {
 
   const loadMyTimeline = (uid) => {
     onValue(ref(db, "timeline/" + uid), (snap) => {
+      if (!snap.exists()) { setMyTimeline([]); return; }
       const list = [];
-      snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-      setMyTimeline([...list].reverse());
+      snap.forEach(c => { list.push({ id: c.key, ...c.val() }); });
+      setMyTimeline(list.slice().reverse());
     });
   };
 
   const loadBrowseTimeline = async (uid) => {
     const snap = await get(ref(db, "timeline/" + uid));
+    if (!snap.exists()) { setBrowseTimeline([]); return; }
     const list = [];
-    snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-    setBrowseTimeline([...list].reverse());
+    snap.forEach(c => { list.push({ id: c.key, ...c.val() }); });
+    setBrowseTimeline(list.slice().reverse());
   };
 
   const handleAuth = async () => {
@@ -168,6 +170,7 @@ export default function App() {
   };
 
   const deleteTimeline = async (id) => {
+    if (!window.confirm("この投稿を削除しますか？")) return;
     await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
   };
 
