@@ -440,10 +440,8 @@ export default function App() {
                         <div style={S.secLabel}>📝 タイムライン</div>
                         <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                           {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
-                            <div key={t.id} style={{ fontSize:13,color:"#4a6b54",padding:"8px 12px",background:"#f0f7f2",borderRadius:10,lineHeight:1.6 }}>
-                              <div>{t.text}</div>
-                              <div style={{ fontSize:10,color:"#a8c5b0",marginTop:3 }}>{new Date(t.createdAt).toLocaleDateString("ja-JP")}</div>
-                            </div>
+                            <TimelinePost key={t.id} post={t} ownerUid={p.uid} currentUser={currentUser}
+                              onClickUser={handleClickUser} canDelete={false} />
                           ))}
                           {tl.length > (tlPage+1)*PAGE_SIZE && (
                             <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[p.uid]:(prev[p.uid]||0)+1 }))}
