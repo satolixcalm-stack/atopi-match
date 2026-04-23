@@ -63,6 +63,10 @@ export default function App() {
   const [profileTimelinePages, setProfileTimelinePages] = useState({});
   const [usersCache, setUsersCache] = useState({});
   const [viewProfile, setViewProfile] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
@@ -80,6 +84,8 @@ export default function App() {
           loadMatches(user.uid);
           loadMyTimeline(user.uid);
           loadMyLikes(user.uid);
+          loadNotifications(user.uid);
+          if (!localStorage.getItem('tutorial_shown')) setShowTutorial(true);
           setScreen("browse");
         } else {
           setScreen("register");
@@ -225,6 +231,22 @@ export default function App() {
     });
   };
 
+  const showToast = (msg, duration = 3000) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), duration);
+  };
+
+  const loadNotifications = (uid) => {
+    onValue(ref(db, "notifications/" + uid), (snap) => {
+      if (!snap.exists()) { setNotifications([]); setUnreadCount(0); return; }
+      const list = [];
+      snap.forEach(c => list.push({ id: c.key, ...c.val() }));
+      list.sort((a, b) => b.createdAt - a.createdAt);
+      setNotifications(list);
+      setUnreadCount(list.length);
+    });
+  };
+
   const sendLike = async (target) => {
     const theirLike = await get(ref(db, "likes/" + target.uid + "/" + currentUser.uid));
     await set(ref(db, "likes/" + currentUser.uid + "/" + target.uid), true);
@@ -232,9 +254,15 @@ export default function App() {
       const matchData = { matchedAt: Date.now() };
       await set(ref(db, "matches/" + currentUser.uid + "/" + target.uid), matchData);
       await set(ref(db, "matches/" + target.uid + "/" + currentUser.uid), matchData);
-      alert(target.name + "さんとマッチしました！💚");
+      showToast("💚 " + target.name + "さんとマッチしました！");
     } else {
-      alert("いいねを送りました！相手もいいねしたらマッチします 💚");
+      showToast("❤️ " + target.name + "さんにいいねしました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
+      // 通知を相手に送る
+      await push(ref(db, "notifications/" + target.uid), {
+        type: "like", fromUserId: currentUser.uid,
+        fromUserName: myProfile.name, fromUserAvatar: myProfile.avatar,
+        createdAt: Date.now()
+      });
     }
     loadAllProfiles(currentUser.uid);
   };
@@ -319,6 +347,31 @@ export default function App() {
       </div>
     );
   }
+
+  // ── チュートリアル ──
+  const tutorialEl = showTutorial ? (
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center" }}>
+      <div style={{ background:"#fff",borderRadius:24,padding:"32px 28px",maxWidth:320,margin:"0 16px",textAlign:"center",boxShadow:"0 16px 48px rgba(0,0,0,0.2)" }}>
+        <div style={{ fontSize:52,marginBottom:12 }}>🌿</div>
+        <h2 style={{ fontSize:18,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>AtopiMatchへようこそ</h2>
+        <p style={{ fontSize:14,color:"#6b8f71",lineHeight:1.8,marginBottom:20 }}>
+          このアプリは、アトピーという同じ経験を持つ人と<strong>共感し、つながる</strong>場所です。<br/><br/>
+          症状・悪化因子・治療法が似ている人と出会えます。
+        </p>
+        <button onClick={() => { setShowTutorial(false); localStorage.setItem('tutorial_shown','1'); }}
+          style={{ width:"100%",background:"#52a875",color:"#fff",border:"none",borderRadius:14,padding:"14px 0",fontSize:15,fontWeight:700,cursor:"pointer" }}>
+          はじめる 💚
+        </button>
+      </div>
+    </div>
+  ) : null;
+
+  // ── トースト ──
+  const toastEl = toast ? (
+    <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
+      {toast}
+    </div>
+  ) : null;
 
   if (screen === "chat" && chatTarget && currentUser && myProfile) return (
     <div style={S.app}>
@@ -445,12 +498,9 @@ export default function App() {
                     <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{p.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{p.age}歳</span></div>
                     <div style={{ fontSize:11,color:"#6b8f71" }}>{p.location}{p.gender?" · "+p.gender:""} · {p.severity}</div>
                     {p.commons?.length > 0 && (
-                      <div style={{ fontSize:11,color:"#52a875",marginTop:3 }}>
-                        共通：{p.commons.join("・")}
+                      <div style={{ fontSize:11,color:"#52a875",marginTop:3,fontWeight:700 }}>
+                        🔥 共通点 {p.commons.length}つ：{p.commons.join("・")}
                       </div>
-                    )}
-                    {p.score > 0 && (
-                      <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>共通点スコア: {p.score}pt</div>
                     )}
                   </div>
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
@@ -506,8 +556,11 @@ export default function App() {
         <div style={S.nav}>
           <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>🔍 探す</button>
           <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ ({Object.keys(matches).length})</button>
-          <button style={S.navBtn} onClick={() => setScreen("mypage")}>👤 マイページ</button>
+          <button style={S.navBtn} onClick={() => setScreen("mypage")}>
+            👤 マイページ{unreadCount > 0 ? <span style={{ marginLeft:4,background:"#e57373",color:"#fff",borderRadius:"50%",fontSize:10,padding:"1px 5px",fontWeight:700 }}>{unreadCount}</span> : ""}
+          </button>
         </div>
+        {tutorialEl}{toastEl}
       </div>
     </div>
   );
@@ -588,6 +641,23 @@ export default function App() {
       <div style={S.page}>
         <div style={S.bar}><span style={S.barTitle}>👤 マイページ</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
         <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
+          {notifications.length > 0 && (
+            <div style={S.card}>
+              <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
+              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                {notifications.slice(0,5).map(n => (
+                  <div key={n.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#f0f7f2",borderRadius:12 }}>
+                    <span style={{ fontSize:22 }}>{n.fromUserAvatar}</span>
+                    <div style={{ fontSize:13,color:"#4a6b54" }}>
+                      <strong>{n.fromUserName}</strong>さんが
+                      {n.type === "like" ? "❤️ いいね" : "💬 コメント"}しました
+                      <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {myProfile && (
             <div style={S.card}>
               <div style={{ textAlign:"center",marginBottom:16 }}>
@@ -630,6 +700,7 @@ export default function App() {
           <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ</button>
           <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>👤 マイページ</button>
         </div>
+        {toastEl}
       </div>
     </div>
   );
