@@ -575,7 +575,7 @@ export default function App() {
                         border: myLikes[p.uid] && !matches[p.uid] ? "1.5px solid #e57373" : "none",
                         borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"
                       }}>
-                      {matches[p.uid] ? "マッチ済み💚" : myLikes[p.uid] ? "いいね済み❤️" : "いいね♥"}
+                      {matches[p.uid] ? "マッチ済み💚" : myLikes[p.uid] ? "共感済み❤️" : "共感する♥"}
                     </button>
                     <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
                   </div>
