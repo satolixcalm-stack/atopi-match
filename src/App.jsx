@@ -258,6 +258,24 @@ export default function App() {
       await set(ref(db, "matches/" + currentUser.uid + "/" + target.uid), matchData);
       await set(ref(db, "matches/" + target.uid + "/" + currentUser.uid), matchData);
       showToast("💚 " + target.name + "さんとマッチしました！");
+      // マッチ成立時：自分への相手からのいいね通知を削除
+      const myNotifsSnap = await get(ref(db, "notifications/" + currentUser.uid));
+      if (myNotifsSnap.exists()) {
+        for (const [id, n] of Object.entries(myNotifsSnap.val())) {
+          if (n.type === "like" && n.fromUserId === target.uid) {
+            await remove(ref(db, "notifications/" + currentUser.uid + "/" + id));
+          }
+        }
+      }
+      // マッチ成立時：相手への自分からのいいね通知も削除
+      const theirNotifsSnap = await get(ref(db, "notifications/" + target.uid));
+      if (theirNotifsSnap.exists()) {
+        for (const [id, n] of Object.entries(theirNotifsSnap.val())) {
+          if (n.type === "like" && n.fromUserId === currentUser.uid) {
+            await remove(ref(db, "notifications/" + target.uid + "/" + id));
+          }
+        }
+      }
     } else {
       showToast("🌿 " + target.name + "さんにいいねしました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
       // スパム防止：既に同じユーザーからのlike通知があれば送らない
@@ -716,7 +734,7 @@ export default function App() {
             <div style={S.card}>
               <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                {notifications.slice(0,5).map(n => (
+                {notifications.filter(n => !matches[n.fromUserId]).slice(0,5).map(n => (
                   <button key={n.id} onClick={() => handleNotificationClick(n)}
                     style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#f0f7f2",borderRadius:12,border:"none",cursor:"pointer",width:"100%",textAlign:"left" }}>
                     <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
