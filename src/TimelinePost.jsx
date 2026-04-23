@@ -2,14 +2,15 @@ import { useState, useEffect } from "react";
 import { db } from "./firebase.js";
 import { ref, get, set, remove, onValue, off, push } from "firebase/database";
 
-export default function TimelinePost({ post, ownerUid, currentUser, onClickUser, canDelete, onDelete }) {
+export default function TimelinePost({ post, ownerUid, currentUser, onClickUser, canDelete, onDelete, highlightedPostId, clearHighlight }) {
   const [likes, setLikes] = useState(post.likes || {});
   const [likeUsers, setLikeUsers] = useState([]);
   const [comments, setComments] = useState([]);
   const [commentInput, setCommentInput] = useState("");
   const [commentPage, setCommentPage] = useState(1);
   const COMMENT_PAGE_SIZE = 3;
-
+  const postRef = useRef(null);
+  const isHighlighted = post.id === highlightedPostId;
   const isOwner = currentUser.uid === ownerUid;
 
   // いいねリアルタイム監視
@@ -41,6 +42,17 @@ export default function TimelinePost({ post, ownerUid, currentUser, onClickUser,
     return () => off(commentRef);
   }, [ownerUid, post.id]);
 
+  // ハイライト＆スクロール処理
+  useEffect(() => {
+    if (isHighlighted && postRef.current) {
+      postRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      const timer = setTimeout(() => {
+        if (clearHighlight) clearHighlight();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isHighlighted]);
+
   const toggleLike = async () => {
     if (isOwner) return;
     const likeRef = ref(db, "timeline/" + ownerUid + "/" + post.id + "/likes/" + currentUser.uid);
@@ -70,7 +82,7 @@ export default function TimelinePost({ post, ownerUid, currentUser, onClickUser,
       await push(ref(db, "notifications/" + ownerUid), {
         type: "comment", fromUserId: currentUser.uid,
         fromUserName: userName, fromUserAvatar: userAvatar,
-        postId: post.id, postOwnerId: ownerUid, createdAt: Date.now()
+        postId: post.id, postOwnerId: ownerUid, postText: post.text.slice(0, 20), createdAt: Date.now()
       });
     }
   };
@@ -83,7 +95,7 @@ export default function TimelinePost({ post, ownerUid, currentUser, onClickUser,
   const hasMoreComments = comments.length > commentPage * COMMENT_PAGE_SIZE;
 
   return (
-    <div style={{ padding:"10px 14px",background:"#f0f7f2",borderRadius:12,position:"relative" }}>
+    <div ref={postRef} style={{ padding:"10px 14px",background:isHighlighted?"#fff9c4":"#f0f7f2",borderRadius:12,position:"relative",transition:"background 0.3s" }}>
       {/* 削除ボタン */}
       {canDelete && (
         <button onClick={onDelete} style={{ position:"absolute",top:8,right:8,background:"none",border:"none",color:"#e57373",fontSize:14,cursor:"pointer" }}>✕</button>
