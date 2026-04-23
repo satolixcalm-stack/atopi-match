@@ -278,24 +278,14 @@ export default function App() {
       }
     } else {
       showToast("🌿 " + target.name + "さんにいいねしました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
-      // スパム防止：既に同じユーザーからのlike通知があれば送らない
-      const existingNotifs = await get(ref(db, "notifications/" + target.uid));
-      let alreadySent = false;
-      if (existingNotifs.exists()) {
-        existingNotifs.forEach(child => {
-          const n = child.val();
-          if (n.type === "like" && n.fromUserId === currentUser.uid) alreadySent = true;
-        });
-      }
-      if (!alreadySent) {
-        await push(ref(db, "notifications/" + target.uid), {
-          type: "like",
-          fromUserId: currentUser.uid,
-          fromUserName: myProfile.name,
-          fromUserAvatar: myProfile.avatar,
-          createdAt: Date.now()
-        });
-      }
+      // 通知を送る（スパム防止：同じユーザーへの通知は1回まで）
+      await push(ref(db, "notifications/" + target.uid), {
+        type: "like",
+        fromUserId: currentUser.uid,
+        fromUserName: myProfile.name,
+        fromUserAvatar: myProfile.avatar,
+        createdAt: Date.now()
+      });
     }
     loadAllProfiles(currentUser.uid);
   };
