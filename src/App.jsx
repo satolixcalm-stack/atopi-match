@@ -63,6 +63,7 @@ export default function App() {
   const [profileTimelinePages, setProfileTimelinePages] = useState({});
   const [usersCache, setUsersCache] = useState({});
   const [viewProfile, setViewProfile] = useState(null);
+  const [highlightedPostId, setHighlightedPostId] = useState(null);
   const [toast, setToast] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -290,9 +291,15 @@ export default function App() {
   const handleNotificationClick = async (n) => {
     const snap = await get(ref(db, "users/" + n.fromUserId));
     if (!snap.exists()) return;
-    const profile = { uid: n.fromUserId, ...snap.val() };
+    const targetUid = n.type === "comment" && n.postOwnerId ? n.postOwnerId : n.fromUserId;
+    const profileSnap = n.type === "comment" && n.postOwnerId
+      ? await get(ref(db, "users/" + n.postOwnerId))
+      : snap;
+    if (!profileSnap.exists()) return;
+    const profile = { uid: targetUid, ...profileSnap.val() };
     setViewProfile(profile);
-    loadProfileTimeline(n.fromUserId);
+    loadProfileTimeline(targetUid);
+    if (n.postId) setHighlightedPostId(n.postId);
     setScreen("viewProfile");
   };
 
@@ -341,7 +348,8 @@ export default function App() {
                 <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                   {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
                     <TimelinePost key={t.id} post={t} ownerUid={viewProfile.uid} currentUser={currentUser}
-                      onClickUser={handleClickUser} canDelete={false} />
+                      onClickUser={handleClickUser} canDelete={false}
+                      highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
                   ))}
                   {tl.length > (tlPage+1)*PAGE_SIZE && (
                     <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[viewProfile.uid]:(prev[viewProfile.uid]||0)+1 }))}
@@ -541,7 +549,8 @@ export default function App() {
                         <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                           {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
                             <TimelinePost key={t.id} post={t} ownerUid={p.uid} currentUser={currentUser}
-                              onClickUser={handleClickUser} canDelete={false} />
+                              onClickUser={handleClickUser} canDelete={false}
+                              highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
                           ))}
                           {tl.length > (tlPage+1)*PAGE_SIZE && (
                             <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[p.uid]:(prev[p.uid]||0)+1 }))}
@@ -625,7 +634,8 @@ export default function App() {
                             <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                               {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
                                 <TimelinePost key={t.id} post={t} ownerUid={m.uid} currentUser={currentUser}
-                                  onClickUser={handleClickUser} canDelete={false} />
+                                  onClickUser={handleClickUser} canDelete={false}
+                                  highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
                               ))}
                               {tl.length > (tlPage+1)*PAGE_SIZE && (
                                 <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[m.uid]:(prev[m.uid]||0)+1 }))}
@@ -668,7 +678,7 @@ export default function App() {
                     <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
                     <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
                       <strong>{n.fromUserName}</strong>さんが
-                      {n.type === "like" ? "❤️ あなたの投稿にいいね" : "💬 あなたの投稿にコメント"}しました
+                {n.type === "like" ? <>❤️ あなたの投稿にいいねしました</> : <>💬 {n.postText ? `「${n.postText}...」` : "あなたの投稿"}にコメントしました</>}
                       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
                     </div>
                     <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
@@ -703,7 +713,8 @@ export default function App() {
               {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
               {myTimeline.slice(0,(timelinePage+1)*PAGE_SIZE).map(t => (
                 <TimelinePost key={t.id} post={t} ownerUid={currentUser.uid} currentUser={currentUser}
-                  onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id)} />
+                  onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id)}
+                  highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
               ))}
               {myTimeline.length > (timelinePage+1)*PAGE_SIZE && (
                 <button onClick={() => setTimelinePage(p => p+1)}
