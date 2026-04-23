@@ -359,6 +359,23 @@ export default function App() {
               {viewProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{viewProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
               {viewProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{viewProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
               {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
+              {/* いいねボタン：自分以外・マッチ未済みに表示 */}
+              {viewProfile.uid !== currentUser.uid && !matches[viewProfile.uid] && (
+                <button onClick={() => sendLike(viewProfile)}
+                  style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,border:"none",cursor:"pointer",fontSize:14,fontWeight:700,
+                    background: myLikes[viewProfile.uid] ? "#ffebee" : "#52a875",
+                    color: myLikes[viewProfile.uid] ? "#e57373" : "#fff"
+                  }}>
+                  {myLikes[viewProfile.uid] ? "💌 共感済み" : "❤️ 共感する"}
+                </button>
+              )}
+              {/* マッチ済みの場合はチャットボタン */}
+              {matches[viewProfile.uid] && (
+                <button onClick={() => { setChatTarget(matches[viewProfile.uid]); setScreen("chat"); }}
+                  style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,border:"none",cursor:"pointer",fontSize:14,fontWeight:700,background:"#52a875",color:"#fff" }}>
+                  💬 チャットする
+                </button>
+              )}
             </div>
             {tl.length > 0 && (
               <div style={S.card}>
