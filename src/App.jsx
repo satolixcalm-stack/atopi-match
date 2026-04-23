@@ -133,8 +133,8 @@ export default function App() {
     });
   };
 
-  const loadProfileTimeline = async (uid) => {
-    if (profileTimelines[uid]) return;
+  const loadProfileTimeline = async (uid, forceReload = false) => {
+    if (profileTimelines[uid] && !forceReload) return;
     const snap = await get(ref(db, "timeline/" + uid));
     const list = [];
     if (snap.exists()) snap.forEach(c => { list.push({ id: c.key, ...c.val() }); });
@@ -298,9 +298,13 @@ export default function App() {
     if (!profileSnap.exists()) return;
     const profile = { uid: targetUid, ...profileSnap.val() };
     setViewProfile(profile);
-    loadProfileTimeline(targetUid);
-    if (n.postId) setHighlightedPostId(n.postId);
+    setHighlightedPostId(null); // 一旦クリア
+    // タイムラインをロードしてから少し待ってハイライトをセット
+    await loadProfileTimeline(targetUid, true);
     setScreen("viewProfile");
+    if (n.postId) {
+      setTimeout(() => setHighlightedPostId(n.postId), 600);
+    }
   };
 
   const toggleArr = (key, val) => setProfileForm(f => ({
