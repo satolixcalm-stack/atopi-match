@@ -287,6 +287,15 @@ export default function App() {
     }
   };
 
+  const handleNotificationClick = async (n) => {
+    const snap = await get(ref(db, "users/" + n.fromUserId));
+    if (!snap.exists()) return;
+    const profile = { uid: n.fromUserId, ...snap.val() };
+    setViewProfile(profile);
+    loadProfileTimeline(n.fromUserId);
+    setScreen("viewProfile");
+  };
+
   const toggleArr = (key, val) => setProfileForm(f => ({
     ...f, [key]: f[key].includes(val) ? f[key].filter(x => x !== val) : [...f[key], val]
   }));
@@ -654,14 +663,16 @@ export default function App() {
               <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                 {notifications.slice(0,5).map(n => (
-                  <div key={n.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#f0f7f2",borderRadius:12 }}>
-                    <span style={{ fontSize:22 }}>{n.fromUserAvatar}</span>
-                    <div style={{ fontSize:13,color:"#4a6b54" }}>
+                  <button key={n.id} onClick={() => handleNotificationClick(n)}
+                    style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#f0f7f2",borderRadius:12,border:"none",cursor:"pointer",width:"100%",textAlign:"left" }}>
+                    <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
+                    <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
                       <strong>{n.fromUserName}</strong>さんが
-                      {n.type === "like" ? "❤️ いいね" : "💬 コメント"}しました
+                      {n.type === "like" ? "❤️ あなたの投稿にいいね" : "💬 あなたの投稿にコメント"}しました
                       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
                     </div>
-                  </div>
+                    <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
+                  </button>
                 ))}
               </div>
             </div>
