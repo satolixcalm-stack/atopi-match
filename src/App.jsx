@@ -678,7 +678,7 @@ export default function App() {
                     <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
                     <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
                       <strong>{n.fromUserName}</strong>さんが
-                {n.type === "like" ? <>❤️ あなたの投稿にいいねしました</> : <>💬 {n.postText ? `「${n.postText}...」` : "あなたの投稿"}にコメントしました</>}
+                {n.type === "like" ? "❤️ あなたの投稿にいいねしました" : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました")}
                       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
                     </div>
                     <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
