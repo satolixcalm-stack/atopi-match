@@ -512,20 +512,52 @@ export default function App() {
             </div>
           ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-              {Object.values(matches).map(m => (
-                <div key={m.uid} style={S.matchRow} onClick={() => { handleClickUser(m.uid); }}>
-                  <div style={{ fontSize:36,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",background:"#f0f7f2",borderRadius:"50%",flexShrink:0 }}>{m.avatar}</div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
-                    <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location} · {m.severity}</div>
-                    <div style={{ fontSize:11,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ</div>
+              {Object.values(matches).map(m => {
+                const isExpanded = expandedUid === m.uid;
+                const tl = profileTimelines[m.uid] || [];
+                const tlPage = profileTimelinePages[m.uid] || 0;
+                return (
+                  <div key={m.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }}
+                      onClick={() => toggleExpand(m.uid)}>
+                      <div style={{ fontSize:36,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",background:"#f0f7f2",borderRadius:"50%",flexShrink:0 }}>{m.avatar}</div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
+                        <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location} · {m.severity}</div>
+                        <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ · {isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
+                      </div>
+                      <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }}
+                        style={{ background:"#52a875",border:"none",borderRadius:"50%",width:40,height:40,fontSize:18,cursor:"pointer",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                        💬
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
+                        {m.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{m.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+                        {m.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{m.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+                        {m.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:10,background:"#f0f7f2",borderRadius:10 }}>{m.bio}</p>}
+                        {tl.length > 0 && (
+                          <>
+                            <div style={S.secLabel}>📝 タイムライン</div>
+                            <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                              {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
+                                <TimelinePost key={t.id} post={t} ownerUid={m.uid} currentUser={currentUser}
+                                  onClickUser={handleClickUser} canDelete={false} />
+                              ))}
+                              {tl.length > (tlPage+1)*PAGE_SIZE && (
+                                <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[m.uid]:(prev[m.uid]||0)+1 }))}
+                                  style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 0",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+                                  もっと見る
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }}
-                    style={{ background:"#52a875",border:"none",borderRadius:"50%",width:40,height:40,fontSize:18,cursor:"pointer",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                    💬
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
