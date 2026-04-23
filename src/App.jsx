@@ -3,6 +3,7 @@ import { db, auth } from "./firebase.js";
 import { ref, set, get, onValue, push, remove } from "firebase/database";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
 import ChatScreen from "./ChatScreen.jsx";
+import TimelinePost from "./TimelinePost.jsx";
 
 const SEVERITY = ["軽症", "中等症", "重症", "寛解中"];
 const SKIN_CONDITIONS = ["乾燥肌", "じゅくじゅく型", "混合型", "慢性型", "季節性"];
@@ -59,6 +60,8 @@ export default function App() {
   const [expandedUid, setExpandedUid] = useState(null);
   const [profileTimelines, setProfileTimelines] = useState({});
   const [profileTimelinePages, setProfileTimelinePages] = useState({});
+  const [usersCache, setUsersCache] = useState({});
+  const [viewProfile, setViewProfile] = useState(null);
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
@@ -127,6 +130,33 @@ export default function App() {
     const list = [];
     if (snap.exists()) snap.forEach(c => { list.push({ id: c.key, ...c.val() }); });
     setProfileTimelines(prev => ({ ...prev, [uid]: list.slice().reverse() }));
+  };
+
+  const getUserInfo = async (uid) => {
+    if (usersCache[uid]) return usersCache[uid];
+    const snap = await get(ref(db, "users/" + uid));
+    if (snap.exists()) {
+      const u = { name: snap.val().name, avatar: snap.val().avatar };
+      setUsersCache(prev => ({ ...prev, [uid]: u }));
+      return u;
+    }
+    return { name: "不明", avatar: "🌿" };
+  };
+
+  const toggleLike = async (ownerUid, postId, currentLikes) => {
+    const likeRef = ref(db, "timeline/" + ownerUid + "/" + postId + "/likes/" + currentUser.uid);
+    if (currentLikes && currentLikes[currentUser.uid]) {
+      await remove(likeRef);
+    } else {
+      await set(likeRef, true);
+    }
+  };
+
+  const getLikeUsers = async (likes) => {
+    if (!likes) return [];
+    const uids = Object.keys(likes);
+    const users = await Promise.all(uids.map(uid => getUserInfo(uid)));
+    return uids.map((uid, i) => ({ uid, ...users[i] }));
   };
 
   const handleAuth = async () => {
@@ -210,6 +240,12 @@ export default function App() {
     }
   };
 
+  const handleClickUser = async (uid) => {
+    if (uid === currentUser.uid) { setScreen("mypage"); return; }
+    const snap = await get(ref(db, "users/" + uid));
+    if (snap.exists()) { setViewProfile({ uid, ...snap.val() }); setScreen("viewProfile"); }
+  };
+
   const toggleArr = (key, val) => setProfileForm(f => ({
     ...f, [key]: f[key].includes(val) ? f[key].filter(x => x !== val) : [...f[key], val]
   }));
@@ -220,6 +256,35 @@ export default function App() {
         .map(p => ({ ...p, ...calcScore(myProfile, p) }))
         .sort((a, b) => b.score - a.score)
     : allProfiles;
+
+  if (screen === "viewProfile" && viewProfile) return (
+    <div style={S.app}>
+      <div style={S.page}>
+        <div style={S.bar}>
+          <button style={S.ghost} onClick={() => setViewProfile(null)}>← 戻る</button>
+          <span style={S.barTitle}>{viewProfile.name}さん</span>
+          <div style={{ width:60 }} />
+        </div>
+        <div style={{ flex:1,overflowY:"auto",padding:16 }}>
+          <div style={S.card}>
+            <div style={{ textAlign:"center",marginBottom:16 }}>
+              <div style={{ fontSize:64 }}>{viewProfile.avatar}</div>
+              <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{viewProfile.name}</div>
+              <div style={{ fontSize:13,color:"#6b8f71" }}>{viewProfile.age}歳 · {viewProfile.gender} · {viewProfile.location}</div>
+            </div>
+            <div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:12 }}>
+              {viewProfile.severity && <span style={S.badge}>{viewProfile.severity}</span>}
+              {viewProfile.skinType && <span style={S.badge}>{viewProfile.skinType}</span>}
+              {viewProfile.yearsWithAtopy && <span style={{ ...S.badge,background:"#e8f5e9" }}>歴{viewProfile.yearsWithAtopy}年</span>}
+            </div>
+            {viewProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{viewProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+            {viewProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{viewProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+            {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   if (screen === "chat" && chatTarget && currentUser && myProfile) return (
     <div style={S.app}>
@@ -476,11 +541,8 @@ export default function App() {
             <div style={{ marginTop:16,display:"flex",flexDirection:"column",gap:10 }}>
               {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
               {myTimeline.slice(0,(timelinePage+1)*PAGE_SIZE).map(t => (
-                <div key={t.id} style={{ padding:"10px 14px",background:"#f0f7f2",borderRadius:12,position:"relative" }}>
-                  <div style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,paddingRight:20 }}>{t.text}</div>
-                  <div style={{ fontSize:10,color:"#a8c5b0",marginTop:4 }}>{new Date(t.createdAt).toLocaleDateString("ja-JP")}</div>
-                  <button onClick={() => deleteTimeline(t.id)} style={{ position:"absolute",top:8,right:8,background:"none",border:"none",color:"#e57373",fontSize:14,cursor:"pointer" }}>✕</button>
-                </div>
+                <TimelinePost key={t.id} post={t} ownerUid={currentUser.uid} currentUser={currentUser}
+                  onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id)} />
               ))}
               {myTimeline.length > (timelinePage+1)*PAGE_SIZE && (
                 <button onClick={() => setTimelinePage(p => p+1)}
