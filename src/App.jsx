@@ -298,14 +298,15 @@ export default function App() {
         .sort((a, b) => b.score - a.score)
     : allProfiles;
 
-  if (screen === "viewProfile" && viewProfile) {
+  if (screen === "viewProfile" && !viewProfile) { setScreen("browse"); return null; }
+  if (screen === "viewProfile") {
     const tl = profileTimelines[viewProfile.uid] || [];
     const tlPage = profileTimelinePages[viewProfile.uid] || 0;
     return (
       <div style={S.app}>
         <div style={S.page}>
           <div style={S.bar}>
-            <button style={S.ghost} onClick={() => setViewProfile(null)}>← 戻る</button>
+            <button style={S.ghost} onClick={() => { setViewProfile(null); setScreen("browse"); }}>← 戻る</button>
             <span style={S.barTitle}>{viewProfile.name}さん</span>
             <div style={{ width:60 }} />
           </div>
@@ -373,7 +374,8 @@ export default function App() {
     </div>
   ) : null;
 
-  if (screen === "chat" && chatTarget && currentUser && myProfile) return (
+  if (screen === "chat" && (!chatTarget || !currentUser || !myProfile)) { setScreen("matches"); return null; }
+  if (screen === "chat") return (
     <div style={S.app}>
       <ChatScreen currentUser={currentUser} myProfile={myProfile} chatTarget={chatTarget}
         onBack={() => { setChatTarget(null); setScreen("matches"); }} />
