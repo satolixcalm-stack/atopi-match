@@ -251,6 +251,8 @@ export default function App() {
   const sendLike = async (target) => {
     const theirLike = await get(ref(db, "likes/" + target.uid + "/" + currentUser.uid));
     await set(ref(db, "likes/" + currentUser.uid + "/" + target.uid), true);
+    // ローカルのmyLikesをすぐに更新（ボタンが赤くなる）
+    setMyLikes(prev => ({ ...prev, [target.uid]: true }));
     if (theirLike.exists()) {
       const matchData = { matchedAt: Date.now() };
       await set(ref(db, "matches/" + currentUser.uid + "/" + target.uid), matchData);
@@ -258,7 +260,6 @@ export default function App() {
       showToast("💚 " + target.name + "さんとマッチしました！");
     } else {
       showToast("❤️ " + target.name + "さんにいいねしました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
-      // 通知を相手に送る
       await push(ref(db, "notifications/" + target.uid), {
         type: "like", fromUserId: currentUser.uid,
         fromUserName: myProfile.name, fromUserAvatar: myProfile.avatar,
@@ -723,13 +724,7 @@ export default function App() {
             <textarea style={{ ...S.input,height:70,resize:"vertical",marginBottom:8 }} placeholder="今日の体調や日常を投稿しましょう..." value={timelineInput} onChange={e => setTimelineInput(e.target.value)} />
             <button style={S.btn} onClick={postTimeline} disabled={timelineLoading}>{timelineLoading?"投稿中...":"投稿する"}</button>
             <div style={{ marginTop:16,display:"flex",flexDirection:"column",gap:10 }}>
-              {myTimeline.length === 0 && (
-                <div style={{ textAlign:"center",padding:"16px 0" }}>
-                  <div style={{ fontSize:32,marginBottom:8 }}>📝</div>
-                  <p style={{ color:"#6b8f71",fontSize:13,fontWeight:700 }}>まだ投稿がありません</p>
-                  <p style={{ color:"#a8c5b0",fontSize:12,marginTop:4 }}>今日の体調を書いてみませんか？</p>
-                </div>
-              )}
+              {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
               {myTimeline.slice(0,(timelinePage+1)*PAGE_SIZE).map(t => (
                 <TimelinePost key={t.id} post={t} ownerUid={currentUser.uid} currentUser={currentUser}
                   onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id)}
