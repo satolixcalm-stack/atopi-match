@@ -399,6 +399,7 @@ export default function App() {
   if (screen === "chat") return (
     <div style={S.app}>
       <ChatScreen currentUser={currentUser} myProfile={myProfile} chatTarget={chatTarget}
+        commons={myProfile ? calcScore(myProfile, chatTarget).commons : []}
         onBack={() => { setChatTarget(null); setScreen("matches"); }} />
     </div>
   );
@@ -597,8 +598,9 @@ export default function App() {
           {Object.keys(matches).length === 0 ? (
             <div style={S.empty}>
               <div style={{ fontSize:48 }}>💚</div>
-              <p style={{ color:"#6b8f71",fontSize:14,marginTop:12 }}>まだマッチがありません</p>
-              <button style={{ ...S.btn,width:"auto",padding:"12px 28px",marginTop:16 }} onClick={() => setScreen("browse")}>探しに行く</button>
+              <p style={{ color:"#3d6b4f",fontSize:15,fontWeight:800,marginTop:12 }}>まだマッチがありません</p>
+              <p style={{ color:"#6b8f71",fontSize:13,marginTop:6 }}>気になる人にいいねしてみましょう</p>
+              <button style={{ ...S.btn,width:"auto",padding:"12px 28px",marginTop:16 }} onClick={() => setScreen("browse")}>探しに行く 🌿</button>
             </div>
           ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -672,6 +674,13 @@ export default function App() {
       <div style={S.page}>
         <div style={S.bar}><span style={S.barTitle}>👤 マイページ</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
         <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
+          {notifications.length === 0 && (
+            <div style={{ ...S.card,textAlign:"center",padding:"20px 24px" }}>
+              <div style={{ fontSize:32,marginBottom:8 }}>🔔</div>
+              <p style={{ color:"#6b8f71",fontSize:13,fontWeight:700 }}>まだ通知はありません</p>
+              <p style={{ color:"#a8c5b0",fontSize:12,marginTop:4 }}>いいねやコメントが届くとここに表示されます</p>
+            </div>
+          )}
           {notifications.length > 0 && (
             <div style={S.card}>
               <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
@@ -682,7 +691,7 @@ export default function App() {
                     <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
                     <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
                       <strong>{n.fromUserName}</strong>さんが
-                {n.type === "like" ? "❤️ あなたの投稿にいいねしました" : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました")}
+                {n.type === "like" ? "❤️ あなたの投稿にいいねしました → 確認する" : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
                       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
                     </div>
                     <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
@@ -714,7 +723,13 @@ export default function App() {
             <textarea style={{ ...S.input,height:70,resize:"vertical",marginBottom:8 }} placeholder="今日の体調や日常を投稿しましょう..." value={timelineInput} onChange={e => setTimelineInput(e.target.value)} />
             <button style={S.btn} onClick={postTimeline} disabled={timelineLoading}>{timelineLoading?"投稿中...":"投稿する"}</button>
             <div style={{ marginTop:16,display:"flex",flexDirection:"column",gap:10 }}>
-              {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
+              {myTimeline.length === 0 && (
+                <div style={{ textAlign:"center",padding:"16px 0" }}>
+                  <div style={{ fontSize:32,marginBottom:8 }}>📝</div>
+                  <p style={{ color:"#6b8f71",fontSize:13,fontWeight:700 }}>まだ投稿がありません</p>
+                  <p style={{ color:"#a8c5b0",fontSize:12,marginTop:4 }}>今日の体調を書いてみませんか？</p>
+                </div>
+              )}
               {myTimeline.slice(0,(timelinePage+1)*PAGE_SIZE).map(t => (
                 <TimelinePost key={t.id} post={t} ownerUid={currentUser.uid} currentUser={currentUser}
                   onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id)}
