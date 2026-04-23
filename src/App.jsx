@@ -501,7 +501,7 @@ export default function App() {
                     <div style={{ fontSize:11,color:"#6b8f71" }}>{p.location}{p.gender?" · "+p.gender:""} · {p.severity}</div>
                     {p.commons?.length > 0 && (
                       <div style={{ fontSize:11,color:"#52a875",marginTop:3,fontWeight:700 }}>
-                        🔥 共通点 {p.commons.length}つ：{p.commons.join("・")}
+                        🌿 同じところ：{p.commons.slice(0,2).join("・")}{p.commons.length > 2 ? ` +${p.commons.length - 2}` : ""}
                       </div>
                     )}
                   </div>
