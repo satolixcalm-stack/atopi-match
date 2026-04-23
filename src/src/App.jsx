@@ -128,7 +128,10 @@ export default function App() {
     onValue(ref(db, "timeline/" + uid), (snap) => {
       if (!snap.exists()) { setMyTimeline([]); return; }
       const list = [];
-      snap.forEach(c => { list.push({ id: c.key, ...c.val() }); });
+      snap.forEach(c => {
+        const val = c.val();
+        if (val && val.text && val.createdAt) list.push({ id: c.key, ...val });
+      });
       setMyTimeline(list.slice().reverse());
     });
   };
@@ -137,7 +140,10 @@ export default function App() {
     if (profileTimelines[uid] && !forceReload) return;
     const snap = await get(ref(db, "timeline/" + uid));
     const list = [];
-    if (snap.exists()) snap.forEach(c => { list.push({ id: c.key, ...c.val() }); });
+    if (snap.exists()) snap.forEach(c => {
+      const val = c.val();
+      if (val && val.text && val.createdAt) list.push({ id: c.key, ...val });
+    });
     setProfileTimelines(prev => ({ ...prev, [uid]: list.slice().reverse() }));
   };
 
