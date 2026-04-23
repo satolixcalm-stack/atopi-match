@@ -6,6 +6,8 @@ export default function TimelinePost({ post, ownerUid, currentUser, onClickUser,
   const [likes, setLikes] = useState(post.likes || {});
   const [likeUsers, setLikeUsers] = useState([]);
 
+  const isOwner = currentUser.uid === ownerUid;
+
   useEffect(() => {
     const likeRef = ref(db, "timeline/" + ownerUid + "/" + post.id + "/likes");
     const unsub = onValue(likeRef, async (snap) => {
@@ -22,6 +24,7 @@ export default function TimelinePost({ post, ownerUid, currentUser, onClickUser,
   }, [ownerUid, post.id]);
 
   const toggleLike = async () => {
+    if (isOwner) return;
     const likeRef = ref(db, "timeline/" + ownerUid + "/" + post.id + "/likes/" + currentUser.uid);
     if (likes[currentUser.uid]) {
       await remove(likeRef);
@@ -43,17 +46,19 @@ export default function TimelinePost({ post, ownerUid, currentUser, onClickUser,
       <div style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,paddingRight:canDelete?20:0 }}>{post.text}</div>
       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:4 }}>{new Date(post.createdAt).toLocaleDateString("ja-JP")}</div>
 
-      {/* いいねエリア */}
+      {/* いいねエリア - 自分の投稿には表示しない */}
       <div style={{ display:"flex",alignItems:"center",gap:10,marginTop:8,flexWrap:"wrap" }}>
-        <button onClick={toggleLike} style={{
-          display:"flex",alignItems:"center",gap:4,
-          background:isLiked?"#ffe4e8":"#fff",
-          border:isLiked?"1.5px solid #f48fb1":"1.5px solid #e0e0e0",
-          borderRadius:20,padding:"3px 12px",cursor:"pointer",
-          color:isLiked?"#e57373":"#aaa",fontSize:13,fontWeight:700
-        }}>
-          ❤️ {likeCount > 0 ? likeCount : ""}
-        </button>
+        {!isOwner && (
+          <button onClick={toggleLike} style={{
+            display:"flex",alignItems:"center",gap:4,
+            background:isLiked?"#ffe4e8":"#fff",
+            border:isLiked?"1.5px solid #f48fb1":"1.5px solid #e0e0e0",
+            borderRadius:20,padding:"3px 12px",cursor:"pointer",
+            color:isLiked?"#e57373":"#aaa",fontSize:13,fontWeight:700
+          }}>
+            ❤️ {likeCount > 0 ? likeCount : ""}
+          </button>
+        )}
         {likeCount > 0 && (
           <div style={{ display:"flex",alignItems:"center",gap:4,flexWrap:"wrap" }}>
             {displayUsers.map((u, i) => (
@@ -64,6 +69,9 @@ export default function TimelinePost({ post, ownerUid, currentUser, onClickUser,
             ))}
             {extraCount > 0 && <span style={{ fontSize:11,color:"#a8c5b0" }}>他{extraCount}人</span>}
           </div>
+        )}
+        {isOwner && likeCount > 0 && (
+          <span style={{ fontSize:12,color:"#e57373",fontWeight:700 }}>❤️ {likeCount}件</span>
         )}
       </div>
     </div>
