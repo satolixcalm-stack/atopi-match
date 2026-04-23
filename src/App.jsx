@@ -501,7 +501,7 @@ export default function App() {
                     <div style={{ fontSize:11,color:"#6b8f71" }}>{p.location}{p.gender?" · "+p.gender:""} · {p.severity}</div>
                     {p.commons?.length > 0 && (
                       <div style={{ fontSize:11,color:"#52a875",marginTop:3,fontWeight:700 }}>
-                        🌿 同じところ：{p.commons.slice(0,2).join("・")}{p.commons.length > 2 ? ` +${p.commons.length - 2}` : ""}
+                        🌿 共通点：{p.commons.slice(0,2).join("・")}{p.commons.length > 2 ? ` +${p.commons.length - 2}` : ""}
                       </div>
                     )}
                   </div>
@@ -584,6 +584,7 @@ export default function App() {
                 const isExpanded = expandedUid === m.uid;
                 const tl = profileTimelines[m.uid] || [];
                 const tlPage = profileTimelinePages[m.uid] || 0;
+                const { commons: mCommons } = myProfile ? calcScore(myProfile, m) : { commons: [] };
                 return (
                   <div key={m.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }}
@@ -592,6 +593,11 @@ export default function App() {
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
                         <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location} · {m.severity}</div>
+                        {mCommons.length > 0 && (
+                          <div style={{ fontSize:11,color:"#52a875",marginTop:2,fontWeight:700 }}>
+                            🌿 共通点：{mCommons.slice(0,2).join("・")}{mCommons.length > 2 ? ` +${mCommons.length - 2}` : ""}
+                          </div>
+                        )}
                         <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ · {isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
                       </div>
                       <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }}
