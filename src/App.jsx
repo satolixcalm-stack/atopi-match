@@ -243,7 +243,12 @@ export default function App() {
   const handleClickUser = async (uid) => {
     if (uid === currentUser.uid) { setScreen("mypage"); return; }
     const snap = await get(ref(db, "users/" + uid));
-    if (snap.exists()) { setViewProfile({ uid, ...snap.val() }); setScreen("viewProfile"); }
+    if (snap.exists()) {
+      const profile = { uid, ...snap.val() };
+      setViewProfile(profile);
+      loadProfileTimeline(uid);
+      setScreen("viewProfile");
+    }
   };
 
   const toggleArr = (key, val) => setProfileForm(f => ({
@@ -257,34 +262,55 @@ export default function App() {
         .sort((a, b) => b.score - a.score)
     : allProfiles;
 
-  if (screen === "viewProfile" && viewProfile) return (
-    <div style={S.app}>
-      <div style={S.page}>
-        <div style={S.bar}>
-          <button style={S.ghost} onClick={() => setViewProfile(null)}>← 戻る</button>
-          <span style={S.barTitle}>{viewProfile.name}さん</span>
-          <div style={{ width:60 }} />
-        </div>
-        <div style={{ flex:1,overflowY:"auto",padding:16 }}>
-          <div style={S.card}>
-            <div style={{ textAlign:"center",marginBottom:16 }}>
-              <div style={{ fontSize:64 }}>{viewProfile.avatar}</div>
-              <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{viewProfile.name}</div>
-              <div style={{ fontSize:13,color:"#6b8f71" }}>{viewProfile.age}歳 · {viewProfile.gender} · {viewProfile.location}</div>
+  if (screen === "viewProfile" && viewProfile) {
+    const tl = profileTimelines[viewProfile.uid] || [];
+    const tlPage = profileTimelinePages[viewProfile.uid] || 0;
+    return (
+      <div style={S.app}>
+        <div style={S.page}>
+          <div style={S.bar}>
+            <button style={S.ghost} onClick={() => setViewProfile(null)}>← 戻る</button>
+            <span style={S.barTitle}>{viewProfile.name}さん</span>
+            <div style={{ width:60 }} />
+          </div>
+          <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
+            <div style={S.card}>
+              <div style={{ textAlign:"center",marginBottom:16 }}>
+                <div style={{ fontSize:64 }}>{viewProfile.avatar}</div>
+                <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{viewProfile.name}</div>
+                <div style={{ fontSize:13,color:"#6b8f71" }}>{viewProfile.age}歳 · {viewProfile.gender} · {viewProfile.location}</div>
+              </div>
+              <div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:12 }}>
+                {viewProfile.severity && <span style={S.badge}>{viewProfile.severity}</span>}
+                {viewProfile.skinType && <span style={S.badge}>{viewProfile.skinType}</span>}
+                {viewProfile.yearsWithAtopy && <span style={{ ...S.badge,background:"#e8f5e9" }}>歴{viewProfile.yearsWithAtopy}年</span>}
+              </div>
+              {viewProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{viewProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+              {viewProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{viewProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+              {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
             </div>
-            <div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:12 }}>
-              {viewProfile.severity && <span style={S.badge}>{viewProfile.severity}</span>}
-              {viewProfile.skinType && <span style={S.badge}>{viewProfile.skinType}</span>}
-              {viewProfile.yearsWithAtopy && <span style={{ ...S.badge,background:"#e8f5e9" }}>歴{viewProfile.yearsWithAtopy}年</span>}
-            </div>
-            {viewProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{viewProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-            {viewProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{viewProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-            {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
+            {tl.length > 0 && (
+              <div style={S.card}>
+                <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>📝 タイムライン</div>
+                <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                  {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
+                    <TimelinePost key={t.id} post={t} ownerUid={viewProfile.uid} currentUser={currentUser}
+                      onClickUser={handleClickUser} canDelete={false} />
+                  ))}
+                  {tl.length > (tlPage+1)*PAGE_SIZE && (
+                    <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[viewProfile.uid]:(prev[viewProfile.uid]||0)+1 }))}
+                      style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"8px 0",fontSize:13,fontWeight:700,cursor:"pointer" }}>
+                      もっと見る
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   if (screen === "chat" && chatTarget && currentUser && myProfile) return (
     <div style={S.app}>
