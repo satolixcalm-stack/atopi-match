@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { db, auth } from "./firebase.js";
-import { ref, set, get, onValue, push, remove, serverTimestamp } from "firebase/database";
+import { ref, set, get, onValue, push, remove } from "firebase/database";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
 import ChatScreen from "./ChatScreen.jsx";
 
@@ -16,6 +16,21 @@ const AVATARS = [
   "🍓","🍒","🍑","🍊","🍋","🍇","🍉","🥝","🍄",
   "⭐","🌈","☀️","🌊","🎵","🎨","💎","🔮","🌙","❄️"
 ];
+const PAGE_SIZE = 3;
+
+// 相性スコア計算
+function calcScore(me, other) {
+  let score = 0;
+  const commons = [];
+  if (me.severity && other.severity && me.severity === other.severity) score += 1;
+  (me.triggers || []).forEach(t => {
+    if ((other.triggers || []).includes(t)) { score += 2; commons.push(t); }
+  });
+  (me.treatments || []).forEach(t => {
+    if ((other.treatments || []).includes(t)) { score += 2; commons.push(t); }
+  });
+  return { score, commons };
+}
 
 export default function App() {
   const [screen, setScreen] = useState("auth");
@@ -35,19 +50,15 @@ export default function App() {
   });
 
   const [allProfiles, setAllProfiles] = useState([]);
-  const [browseIndex, setBrowseIndex] = useState(0);
   const [matches, setMatches] = useState({});
-  const [swipeDir, setSwipeDir] = useState(null);
-  const [showMatch, setShowMatch] = useState(null);
-  const [likeLoading, setLikeLoading] = useState(false);
   const [chatTarget, setChatTarget] = useState(null);
   const [myTimeline, setMyTimeline] = useState([]);
   const [timelineInput, setTimelineInput] = useState("");
   const [timelineLoading, setTimelineLoading] = useState(false);
-  const [browseTimeline, setBrowseTimeline] = useState([]);
   const [timelinePage, setTimelinePage] = useState(0);
-  const [browseTimelinePage, setBrowseTimelinePage] = useState(0);
-  const PAGE_SIZE = 3;
+  const [expandedUid, setExpandedUid] = useState(null);
+  const [profileTimelines, setProfileTimelines] = useState({});
+  const [profileTimelinePages, setProfileTimelinePages] = useState({});
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
@@ -110,12 +121,12 @@ export default function App() {
     });
   };
 
-  const loadBrowseTimeline = async (uid) => {
+  const loadProfileTimeline = async (uid) => {
+    if (profileTimelines[uid]) return;
     const snap = await get(ref(db, "timeline/" + uid));
-    if (!snap.exists()) { setBrowseTimeline([]); return; }
     const list = [];
-    snap.forEach(c => { list.push({ id: c.key, ...c.val() }); });
-    setBrowseTimeline(list.slice().reverse());
+    if (snap.exists()) snap.forEach(c => { list.push({ id: c.key, ...c.val() }); });
+    setProfileTimelines(prev => ({ ...prev, [uid]: list.slice().reverse() }));
   };
 
   const handleAuth = async () => {
@@ -165,8 +176,7 @@ export default function App() {
     setTimelineLoading(true);
     try {
       await push(ref(db, "timeline/" + currentUser.uid), {
-        text: timelineInput.trim(),
-        createdAt: Date.now(),
+        text: timelineInput.trim(), createdAt: Date.now(),
       });
       setTimelineInput("");
     } finally { setTimelineLoading(false); }
@@ -177,38 +187,39 @@ export default function App() {
     await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
   };
 
-  const browsable = allProfiles.filter(p => !matches[p.uid]);
-  const currentProfile = browsable[browseIndex];
-
-  const handleSwipe = async (direction) => {
-    if (!currentProfile || likeLoading) return;
-    setSwipeDir(direction); setLikeLoading(true);
-    await new Promise(r => setTimeout(r, 380));
-    setSwipeDir(null);
-    if (direction === "right") {
-      const theirLike = await get(ref(db, "likes/" + currentProfile.uid + "/" + currentUser.uid));
-      await set(ref(db, "likes/" + currentUser.uid + "/" + currentProfile.uid), true);
-      if (theirLike.exists()) {
-        const matchData = { matchedAt: Date.now() };
-        await set(ref(db, "matches/" + currentUser.uid + "/" + currentProfile.uid), matchData);
-        await set(ref(db, "matches/" + currentProfile.uid + "/" + currentUser.uid), matchData);
-        setShowMatch(currentProfile);
-        setTimeout(() => setShowMatch(null), 2200);
-      }
+  const sendLike = async (target) => {
+    const theirLike = await get(ref(db, "likes/" + target.uid + "/" + currentUser.uid));
+    await set(ref(db, "likes/" + currentUser.uid + "/" + target.uid), true);
+    if (theirLike.exists()) {
+      const matchData = { matchedAt: Date.now() };
+      await set(ref(db, "matches/" + currentUser.uid + "/" + target.uid), matchData);
+      await set(ref(db, "matches/" + target.uid + "/" + currentUser.uid), matchData);
+      alert(target.name + "さんとマッチしました！💚");
+    } else {
+      alert("いいねを送りました！相手もいいねしたらマッチします 💚");
     }
-    setBrowseIndex(i => i + 1);
-    setBrowseTimeline([]);
-    setBrowseTimelinePage(0);
-    setLikeLoading(false);
+    loadAllProfiles(currentUser.uid);
   };
 
-  useEffect(() => {
-    if (currentProfile) loadBrowseTimeline(currentProfile.uid);
-  }, [browseIndex, currentProfile?.uid]);
+  const toggleExpand = (uid) => {
+    if (expandedUid === uid) {
+      setExpandedUid(null);
+    } else {
+      setExpandedUid(uid);
+      loadProfileTimeline(uid);
+    }
+  };
 
   const toggleArr = (key, val) => setProfileForm(f => ({
     ...f, [key]: f[key].includes(val) ? f[key].filter(x => x !== val) : [...f[key], val]
   }));
+
+  // スコア順に並べた一覧
+  const sortedProfiles = myProfile
+    ? allProfiles
+        .map(p => ({ ...p, ...calcScore(myProfile, p) }))
+        .sort((a, b) => b.score - a.score)
+    : allProfiles;
 
   if (screen === "chat" && chatTarget && currentUser && myProfile) return (
     <div style={S.app}>
@@ -309,73 +320,86 @@ export default function App() {
     </div>
   );
 
+  // ── 探す（一覧）──
   if (screen === "browse") return (
     <div style={S.app}>
       <div style={S.page}>
-        <div style={S.bar}><span style={S.barTitle}>🌿 AtopiMatch</span><button style={S.ghost} onClick={() => signOut(auth)}>退出</button></div>
-        {showMatch && (
-          <div style={{ position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",background:"#fff",borderRadius:24,padding:"32px 40px",textAlign:"center",boxShadow:"0 16px 48px rgba(61,107,79,0.2)",zIndex:100 }}>
-            <div style={{ fontSize:48 }}>{showMatch.avatar}</div>
-            <div style={{ fontSize:22,fontWeight:800,color:"#52a875",marginTop:8 }}>マッチしました！💚</div>
-            <div style={{ fontSize:14,color:"#6b8f71",marginTop:4 }}>{showMatch.name}さんと</div>
-          </div>
-        )}
-        <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 16px 0",overflowY:"auto" }}>
-          {!currentProfile || browseIndex >= browsable.length ? (
+        <div style={S.bar}><span style={S.barTitle}>🌿 自分と似ている人</span><button style={S.ghost} onClick={() => signOut(auth)}>退出</button></div>
+        <div style={{ flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:12 }}>
+          {sortedProfiles.length === 0 ? (
             <div style={S.empty}>
               <div style={{ fontSize:52 }}>🌿</div>
-              <h3 style={{ color:"#3d6b4f",marginTop:12 }}>今日はここまで</h3>
-              <p style={{ color:"#6b8f71",fontSize:13 }}>新しい出会いをお待ちください</p>
-              <button style={{ ...S.btn,width:"auto",padding:"12px 28px",marginTop:20 }} onClick={() => setScreen("matches")}>マッチ一覧へ</button>
+              <h3 style={{ color:"#3d6b4f",marginTop:12 }}>まだユーザーがいません</h3>
+              <p style={{ color:"#6b8f71",fontSize:13 }}>友達を招待してみましょう</p>
             </div>
-          ) : (
-            <>
-              <div style={{ fontSize:13,color:"#6b8f71",marginBottom:10 }}>残り {browsable.length - browseIndex} 人</div>
-              <div style={{ ...S.profileCard,transform:swipeDir==="left"?"translateX(-130%) rotate(-18deg)":swipeDir==="right"?"translateX(130%) rotate(18deg)":"none",transition:swipeDir?"transform 0.38s cubic-bezier(.4,0,.2,1)":"none" }}>
-                {swipeDir==="right" && <div style={S.stamp}>LIKE 💚</div>}
-                {swipeDir==="left" && <div style={{ ...S.stamp,background:"#ffebee",color:"#e57373",border:"3px solid #e57373" }}>SKIP ✕</div>}
-                <div style={{ fontSize:56,textAlign:"center",marginBottom:6 }}>{currentProfile.avatar}</div>
-                <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f",textAlign:"center" }}>
-                  {currentProfile.name} <span style={{ fontSize:15,fontWeight:400,color:"#6b8f71" }}>{currentProfile.age}歳</span>
+          ) : sortedProfiles.map(p => {
+            const isExpanded = expandedUid === p.uid;
+            const liked = false;
+            const tl = profileTimelines[p.uid] || [];
+            const tlPage = profileTimelinePages[p.uid] || 0;
+            return (
+              <div key={p.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
+                {/* ヘッダー行 */}
+                <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px" }} onClick={() => toggleExpand(p.uid)}>
+                  <div style={{ fontSize:36,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",background:"#f0f7f2",borderRadius:"50%",flexShrink:0 }}>{p.avatar}</div>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{p.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{p.age}歳</span></div>
+                    <div style={{ fontSize:11,color:"#6b8f71" }}>{p.location}{p.gender?" · "+p.gender:""} · {p.severity}</div>
+                    {p.commons?.length > 0 && (
+                      <div style={{ fontSize:11,color:"#52a875",marginTop:3 }}>
+                        共通：{p.commons.join("・")}
+                      </div>
+                    )}
+                    {p.score > 0 && (
+                      <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>共通点スコア: {p.score}pt</div>
+                    )}
+                  </div>
+                  <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); sendLike(p); }}
+                      style={{ background:matches[p.uid]?"#e8f5e9":"#52a875",color:matches[p.uid]?"#52a875":"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+                      {matches[p.uid]?"マッチ済み💚":"いいね♥"}
+                    </button>
+                    <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
+                  </div>
                 </div>
-                <div style={{ fontSize:12,color:"#6b8f71",textAlign:"center",marginBottom:10 }}>
-                  📍 {currentProfile.location}{currentProfile.gender ? " · "+currentProfile.gender : ""}
-                </div>
-                <div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:10 }}>
-                  {currentProfile.severity && <span style={S.badge}>{currentProfile.severity}</span>}
-                  {currentProfile.skinType && <span style={S.badge}>{currentProfile.skinType}</span>}
-                  {currentProfile.yearsWithAtopy && <span style={{ ...S.badge,background:"#e8f5e9" }}>歴{currentProfile.yearsWithAtopy}年</span>}
-                </div>
-                {currentProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{currentProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-                {currentProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{currentProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-                {currentProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:12,padding:12,background:"#f0f7f2",borderRadius:12 }}>{currentProfile.bio}</p>}
-                {browseTimeline.length > 0 && (
-                  <>
-                    <div style={S.secLabel}>📝 タイムライン</div>
-                    <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                      {browseTimeline.slice(0,(browseTimelinePage+1)*PAGE_SIZE).map(t => (
-                        <div key={t.id} style={{ fontSize:13,color:"#4a6b54",padding:"8px 12px",background:"#f0f7f2",borderRadius:10,lineHeight:1.6 }}>
-                          <div>{t.text}</div>
-                          <div style={{ fontSize:10,color:"#a8c5b0",marginTop:3 }}>{new Date(t.createdAt).toLocaleDateString("ja-JP")}</div>
+
+                {/* 詳細（展開時） */}
+                {isExpanded && (
+                  <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
+                    {p.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{p.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+                    {p.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{p.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+                    {p.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:10,background:"#f0f7f2",borderRadius:10 }}>{p.bio}</p>}
+                    {tl.length > 0 && (
+                      <>
+                        <div style={S.secLabel}>📝 タイムライン</div>
+                        <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                          {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
+                            <div key={t.id} style={{ fontSize:13,color:"#4a6b54",padding:"8px 12px",background:"#f0f7f2",borderRadius:10,lineHeight:1.6 }}>
+                              <div>{t.text}</div>
+                              <div style={{ fontSize:10,color:"#a8c5b0",marginTop:3 }}>{new Date(t.createdAt).toLocaleDateString("ja-JP")}</div>
+                            </div>
+                          ))}
+                          {tl.length > (tlPage+1)*PAGE_SIZE && (
+                            <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[p.uid]:(prev[p.uid]||0)+1 }))}
+                              style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 0",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+                              もっと見る
+                            </button>
+                          )}
                         </div>
-                      ))}
-                      {browseTimeline.length > (browseTimelinePage+1)*PAGE_SIZE && (
-                        <button onClick={() => setBrowseTimelinePage(p => p+1)}
-                          style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 0",fontSize:12,fontWeight:700,cursor:"pointer",marginTop:2 }}>
-                          もっと見る
-                        </button>
-                      )}
-                    </div>
-                  </>
+                      </>
+                    )}
+                    {matches[p.uid] && (
+                      <button onClick={() => { setChatTarget(p); setScreen("chat"); }}
+                        style={{ ...S.btn,marginTop:12,padding:"10px 0",fontSize:13 }}>
+                        💬 チャットする
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
-              <div style={{ display:"flex",alignItems:"center",gap:28,padding:"14px 0" }}>
-                <button style={S.nopeBtn} onClick={() => handleSwipe("left")} disabled={likeLoading}>✕</button>
-                <div style={{ fontSize:11,color:"#a8c5b0" }}>タップして選ぼう</div>
-                <button style={S.likeBtn} onClick={() => handleSwipe("right")} disabled={likeLoading}>💚</button>
-              </div>
-            </>
-          )}
+            );
+          })}
         </div>
         <div style={S.nav}>
           <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>🔍 探す</button>
@@ -451,7 +475,7 @@ export default function App() {
             <button style={S.btn} onClick={postTimeline} disabled={timelineLoading}>{timelineLoading?"投稿中...":"投稿する"}</button>
             <div style={{ marginTop:16,display:"flex",flexDirection:"column",gap:10 }}>
               {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
-              {myTimeline.slice(0, (timelinePage+1)*PAGE_SIZE).map(t => (
+              {myTimeline.slice(0,(timelinePage+1)*PAGE_SIZE).map(t => (
                 <div key={t.id} style={{ padding:"10px 14px",background:"#f0f7f2",borderRadius:12,position:"relative" }}>
                   <div style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,paddingRight:20 }}>{t.text}</div>
                   <div style={{ fontSize:10,color:"#a8c5b0",marginTop:4 }}>{new Date(t.createdAt).toLocaleDateString("ja-JP")}</div>
@@ -494,13 +518,9 @@ const S = {
   bar:{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 20px",background:"#fff",boxShadow:"0 1px 8px rgba(61,107,79,0.07)",flexShrink:0 },
   barTitle:{ fontSize:17,fontWeight:800,color:"#3d6b4f" },
   ghost:{ background:"none",border:"1px solid #c8e6c9",borderRadius:10,padding:"5px 12px",fontSize:12,color:"#6b8f71",cursor:"pointer" },
-  profileCard:{ background:"#fff",borderRadius:24,padding:22,width:"100%",maxWidth:370,boxShadow:"0 8px 32px rgba(61,107,79,0.12)",marginBottom:6,position:"relative",overflow:"hidden" },
-  stamp:{ position:"absolute",top:20,right:20,background:"#e8f5e9",color:"#52a875",border:"3px solid #52a875",borderRadius:10,padding:"4px 12px",fontWeight:800,fontSize:14,transform:"rotate(10deg)" },
   badge:{ background:"#f0f7f2",color:"#3d6b4f",borderRadius:20,padding:"4px 11px",fontSize:11,fontWeight:700 },
   secLabel:{ fontSize:11,fontWeight:700,color:"#6b8f71",marginBottom:5,marginTop:10 },
   infoChip:{ background:"#f0f7f2",color:"#6b8f71",borderRadius:20,padding:"3px 11px",fontSize:11,border:"1px solid #c8e6c9" },
-  nopeBtn:{ width:58,height:58,borderRadius:"50%",background:"#fff",border:"2px solid #ffccbc",color:"#e57373",fontSize:22,cursor:"pointer",boxShadow:"0 4px 12px rgba(0,0,0,0.07)" },
-  likeBtn:{ width:58,height:58,borderRadius:"50%",background:"#52a875",border:"none",color:"#fff",fontSize:22,cursor:"pointer",boxShadow:"0 4px 14px rgba(82,168,117,0.35)" },
   empty:{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40,textAlign:"center" },
   matchRow:{ background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(61,107,79,0.06)",cursor:"pointer" },
   nav:{ display:"flex",borderTop:"1px solid #e8f5e9",background:"#fff",flexShrink:0 },
