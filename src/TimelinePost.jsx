@@ -70,7 +70,7 @@ export default function TimelinePost({ post, ownerUid, currentUser, onClickUser,
       await push(ref(db, "notifications/" + ownerUid), {
         type: "comment", fromUserId: currentUser.uid,
         fromUserName: userName, fromUserAvatar: userAvatar,
-        postId: post.id, createdAt: Date.now()
+        postId: post.id, postOwnerId: ownerUid, createdAt: Date.now()
       });
     }
   };
