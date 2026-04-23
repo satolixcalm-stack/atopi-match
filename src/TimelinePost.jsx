@@ -45,7 +45,9 @@ export default function TimelinePost({ post, ownerUid, currentUser, onClickUser,
   // ハイライト＆スクロール処理
   useEffect(() => {
     if (isHighlighted && postRef.current) {
-      postRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        postRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
       const timer = setTimeout(() => {
         if (clearHighlight) clearHighlight();
       }, 3000);
