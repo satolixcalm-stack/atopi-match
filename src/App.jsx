@@ -251,20 +251,33 @@ export default function App() {
   const sendLike = async (target) => {
     const theirLike = await get(ref(db, "likes/" + target.uid + "/" + currentUser.uid));
     await set(ref(db, "likes/" + currentUser.uid + "/" + target.uid), true);
-    // ローカルのmyLikesをすぐに更新（ボタンが赤くなる）
     setMyLikes(prev => ({ ...prev, [target.uid]: true }));
     if (theirLike.exists()) {
+      // マッチ成立
       const matchData = { matchedAt: Date.now() };
       await set(ref(db, "matches/" + currentUser.uid + "/" + target.uid), matchData);
       await set(ref(db, "matches/" + target.uid + "/" + currentUser.uid), matchData);
       showToast("💚 " + target.name + "さんとマッチしました！");
     } else {
-      showToast("❤️ " + target.name + "さんにいいねしました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
-      await push(ref(db, "notifications/" + target.uid), {
-        type: "like", fromUserId: currentUser.uid,
-        fromUserName: myProfile.name, fromUserAvatar: myProfile.avatar,
-        createdAt: Date.now()
-      });
+      showToast("🌿 " + target.name + "さんにいいねしました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
+      // スパム防止：既に同じユーザーからのlike通知があれば送らない
+      const existingNotifs = await get(ref(db, "notifications/" + target.uid));
+      let alreadySent = false;
+      if (existingNotifs.exists()) {
+        existingNotifs.forEach(child => {
+          const n = child.val();
+          if (n.type === "like" && n.fromUserId === currentUser.uid) alreadySent = true;
+        });
+      }
+      if (!alreadySent) {
+        await push(ref(db, "notifications/" + target.uid), {
+          type: "like",
+          fromUserId: currentUser.uid,
+          fromUserName: myProfile.name,
+          fromUserAvatar: myProfile.avatar,
+          createdAt: Date.now()
+        });
+      }
     }
     loadAllProfiles(currentUser.uid);
   };
@@ -692,7 +705,7 @@ export default function App() {
                     <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
                     <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
                       <strong>{n.fromUserName}</strong>さんが
-                {n.type === "like" ? "❤️ あなたの投稿にいいねしました → 確認する" : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
+                {n.type === "like" ? "🌿 あなたのプロフィールに興味を持っています → 見てみる" : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
                       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
                     </div>
                     <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
