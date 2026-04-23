@@ -513,14 +513,17 @@ export default function App() {
           ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               {Object.values(matches).map(m => (
-                <div key={m.uid} style={S.matchRow} onClick={() => { setChatTarget(m); setScreen("chat"); }}>
+                <div key={m.uid} style={S.matchRow} onClick={() => { handleClickUser(m.uid); }}>
                   <div style={{ fontSize:36,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",background:"#f0f7f2",borderRadius:"50%",flexShrink:0 }}>{m.avatar}</div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
                     <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location} · {m.severity}</div>
                     <div style={{ fontSize:11,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ</div>
                   </div>
-                  <span style={{ fontSize:20 }}>💬</span>
+                  <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }}
+                    style={{ background:"#52a875",border:"none",borderRadius:"50%",width:40,height:40,fontSize:18,cursor:"pointer",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                    💬
+                  </button>
                 </div>
               ))}
             </div>
