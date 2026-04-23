@@ -289,21 +289,21 @@ export default function App() {
   };
 
   const handleNotificationClick = async (n) => {
-    const snap = await get(ref(db, "users/" + n.fromUserId));
-    if (!snap.exists()) return;
-    const targetUid = n.type === "comment" && n.postOwnerId ? n.postOwnerId : n.fromUserId;
-    const profileSnap = n.type === "comment" && n.postOwnerId
-      ? await get(ref(db, "users/" + n.postOwnerId))
-      : snap;
-    if (!profileSnap.exists()) return;
-    const profile = { uid: targetUid, ...profileSnap.val() };
-    setViewProfile(profile);
-    setHighlightedPostId(null); // 一旦クリア
-    // タイムラインをロードしてから少し待ってハイライトをセット
-    await loadProfileTimeline(targetUid, true);
-    setScreen("viewProfile");
-    if (n.postId) {
-      setTimeout(() => setHighlightedPostId(n.postId), 600);
+    if (n.type === "like") {
+      // いいね通知 → いいねした人のプロフィールへ
+      const snap = await get(ref(db, "users/" + n.fromUserId));
+      if (!snap.exists()) return;
+      const profile = { uid: n.fromUserId, ...snap.val() };
+      setViewProfile(profile);
+      await loadProfileTimeline(n.fromUserId, true);
+      setScreen("viewProfile");
+    } else if (n.type === "comment") {
+      // コメント通知 → 自分のマイページへ遷移してその投稿をハイライト
+      setHighlightedPostId(null);
+      setScreen("mypage");
+      if (n.postId) {
+        setTimeout(() => setHighlightedPostId(n.postId), 400);
+      }
     }
   };
 
