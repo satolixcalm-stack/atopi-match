@@ -58,6 +58,7 @@ export default function App() {
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [timelinePage, setTimelinePage] = useState(0);
   const [expandedUid, setExpandedUid] = useState(null);
+  const [myLikes, setMyLikes] = useState({});
   const [profileTimelines, setProfileTimelines] = useState({});
   const [profileTimelinePages, setProfileTimelinePages] = useState({});
   const [usersCache, setUsersCache] = useState({});
@@ -78,6 +79,7 @@ export default function App() {
           loadAllProfiles(user.uid);
           loadMatches(user.uid);
           loadMyTimeline(user.uid);
+          loadMyLikes(user.uid);
           setScreen("browse");
         } else {
           setScreen("register");
@@ -215,6 +217,12 @@ export default function App() {
   const deleteTimeline = async (id) => {
     if (!window.confirm("この投稿を削除しますか？")) return;
     await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
+  };
+
+  const loadMyLikes = (uid) => {
+    onValue(ref(db, "likes/" + uid), (snap) => {
+      setMyLikes(snap.exists() ? snap.val() : {});
+    });
   };
 
   const sendLike = async (target) => {
@@ -448,8 +456,13 @@ export default function App() {
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
                     <button
                       onClick={e => { e.stopPropagation(); sendLike(p); }}
-                      style={{ background:matches[p.uid]?"#e8f5e9":"#52a875",color:matches[p.uid]?"#52a875":"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                      {matches[p.uid]?"マッチ済み💚":"いいね♥"}
+                      style={{
+                        background: matches[p.uid] ? "#e8f5e9" : myLikes[p.uid] ? "#ffebee" : "#52a875",
+                        color: matches[p.uid] ? "#52a875" : myLikes[p.uid] ? "#e57373" : "#fff",
+                        border: myLikes[p.uid] && !matches[p.uid] ? "1.5px solid #e57373" : "none",
+                        borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"
+                      }}>
+                      {matches[p.uid] ? "マッチ済み💚" : myLikes[p.uid] ? "いいね済み❤️" : "いいね♥"}
                     </button>
                     <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
                   </div>
