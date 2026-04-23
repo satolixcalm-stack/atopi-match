@@ -19,7 +19,6 @@ const AVATARS = [
 ];
 const PAGE_SIZE = 3;
 
-// 相性スコア計算
 function calcScore(me, other) {
   let score = 0;
   const commons = [];
@@ -130,7 +129,7 @@ export default function App() {
       const list = [];
       snap.forEach(c => {
         const val = c.val();
-        if (val && val.text && val.createdAt) list.push({ id: c.key, ...val });
+        if (val && val.text) list.push({ id: c.key, ...val });
       });
       setMyTimeline(list.slice().reverse());
     });
@@ -142,7 +141,7 @@ export default function App() {
     const list = [];
     if (snap.exists()) snap.forEach(c => {
       const val = c.val();
-      if (val && val.text && val.createdAt) list.push({ id: c.key, ...val });
+      if (val && val.text) list.push({ id: c.key, ...val });
     });
     setProfileTimelines(prev => ({ ...prev, [uid]: list.slice().reverse() }));
   };
@@ -156,22 +155,6 @@ export default function App() {
       return u;
     }
     return { name: "不明", avatar: "🌿" };
-  };
-
-  const toggleLike = async (ownerUid, postId, currentLikes) => {
-    const likeRef = ref(db, "timeline/" + ownerUid + "/" + postId + "/likes/" + currentUser.uid);
-    if (currentLikes && currentLikes[currentUser.uid]) {
-      await remove(likeRef);
-    } else {
-      await set(likeRef, true);
-    }
-  };
-
-  const getLikeUsers = async (likes) => {
-    if (!likes) return [];
-    const uids = Object.keys(likes);
-    const users = await Promise.all(uids.map(uid => getUserInfo(uid)));
-    return uids.map((uid, i) => ({ uid, ...users[i] }));
   };
 
   const handleAuth = async () => {
@@ -259,12 +242,10 @@ export default function App() {
     await set(ref(db, "likes/" + currentUser.uid + "/" + target.uid), true);
     setMyLikes(prev => ({ ...prev, [target.uid]: true }));
     if (theirLike.exists()) {
-      // マッチ成立
       const matchData = { matchedAt: Date.now() };
       await set(ref(db, "matches/" + currentUser.uid + "/" + target.uid), matchData);
       await set(ref(db, "matches/" + target.uid + "/" + currentUser.uid), matchData);
       showToast("💚 " + target.name + "さんとマッチしました！");
-      // マッチ成立時：自分への相手からのいいね通知を削除
       const myNotifsSnap = await get(ref(db, "notifications/" + currentUser.uid));
       if (myNotifsSnap.exists()) {
         for (const [id, n] of Object.entries(myNotifsSnap.val())) {
@@ -273,7 +254,6 @@ export default function App() {
           }
         }
       }
-      // マッチ成立時：相手への自分からのいいね通知も削除
       const theirNotifsSnap = await get(ref(db, "notifications/" + target.uid));
       if (theirNotifsSnap.exists()) {
         for (const [id, n] of Object.entries(theirNotifsSnap.val())) {
@@ -284,12 +264,9 @@ export default function App() {
       }
     } else {
       showToast("🌿 " + target.name + "さんにいいねしました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
-      // 通知を送る（スパム防止：同じユーザーへの通知は1回まで）
       await push(ref(db, "notifications/" + target.uid), {
-        type: "like",
-        fromUserId: currentUser.uid,
-        fromUserName: myProfile.name,
-        fromUserAvatar: myProfile.avatar,
+        type: "like", fromUserId: currentUser.uid,
+        fromUserName: myProfile.name, fromUserAvatar: myProfile.avatar,
         createdAt: Date.now()
       });
     }
@@ -318,7 +295,6 @@ export default function App() {
 
   const handleNotificationClick = async (n) => {
     if (n.type === "like") {
-      // いいね通知 → いいねした人のプロフィールへ
       const snap = await get(ref(db, "users/" + n.fromUserId));
       if (!snap.exists()) return;
       const profile = { uid: n.fromUserId, ...snap.val() };
@@ -326,12 +302,9 @@ export default function App() {
       await loadProfileTimeline(n.fromUserId, true);
       setScreen("viewProfile");
     } else if (n.type === "comment") {
-      // コメント通知 → 自分のマイページへ遷移してその投稿をハイライト
       setHighlightedPostId(null);
       setScreen("mypage");
-      if (n.postId) {
-        setTimeout(() => setHighlightedPostId(n.postId), 400);
-      }
+      if (n.postId) setTimeout(() => setHighlightedPostId(n.postId), 400);
     }
   };
 
@@ -339,11 +312,8 @@ export default function App() {
     ...f, [key]: f[key].includes(val) ? f[key].filter(x => x !== val) : [...f[key], val]
   }));
 
-  // スコア順に並べた一覧
   const sortedProfiles = myProfile
-    ? allProfiles
-        .map(p => ({ ...p, ...calcScore(myProfile, p) }))
-        .sort((a, b) => b.score - a.score)
+    ? allProfiles.map(p => ({ ...p, ...calcScore(myProfile, p) })).sort((a, b) => b.score - a.score)
     : allProfiles;
 
   if (screen === "viewProfile" && !viewProfile) { setScreen("browse"); return null; }
@@ -373,17 +343,14 @@ export default function App() {
               {viewProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{viewProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
               {viewProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{viewProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
               {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
-              {/* いいねボタン：自分以外・マッチ未済みに表示 */}
               {viewProfile.uid !== currentUser.uid && !matches[viewProfile.uid] && (
                 <button onClick={() => sendLike(viewProfile)}
                   style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,border:"none",cursor:"pointer",fontSize:14,fontWeight:700,
                     background: myLikes[viewProfile.uid] ? "#ffebee" : "#52a875",
-                    color: myLikes[viewProfile.uid] ? "#e57373" : "#fff"
-                  }}>
+                    color: myLikes[viewProfile.uid] ? "#e57373" : "#fff" }}>
                   {myLikes[viewProfile.uid] ? "💌 共感済み" : "❤️ 共感する"}
                 </button>
               )}
-              {/* マッチ済みの場合はチャットボタン */}
               {matches[viewProfile.uid] && (
                 <button onClick={() => { setChatTarget(matches[viewProfile.uid]); setScreen("chat"); }}
                   style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,border:"none",cursor:"pointer",fontSize:14,fontWeight:700,background:"#52a875",color:"#fff" }}>
@@ -415,7 +382,6 @@ export default function App() {
     );
   }
 
-  // ── チュートリアル ──
   const tutorialEl = showTutorial ? (
     <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center" }}>
       <div style={{ background:"#fff",borderRadius:24,padding:"32px 28px",maxWidth:320,margin:"0 16px",textAlign:"center",boxShadow:"0 16px 48px rgba(0,0,0,0.2)" }}>
@@ -433,7 +399,6 @@ export default function App() {
     </div>
   ) : null;
 
-  // ── トースト ──
   const toastEl = toast ? (
     <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
       {toast}
@@ -541,7 +506,6 @@ export default function App() {
     </div>
   );
 
-  // ── 探す（一覧）──
   if (screen === "browse") return (
     <div style={S.app}>
       <div style={S.page}>
@@ -555,12 +519,10 @@ export default function App() {
             </div>
           ) : sortedProfiles.map(p => {
             const isExpanded = expandedUid === p.uid;
-            const liked = false;
             const tl = profileTimelines[p.uid] || [];
             const tlPage = profileTimelinePages[p.uid] || 0;
             return (
               <div key={p.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
-                {/* ヘッダー行 */}
                 <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px" }} onClick={() => toggleExpand(p.uid)}>
                   <div style={{ fontSize:36,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",background:"#f0f7f2",borderRadius:"50%",flexShrink:0 }}>{p.avatar}</div>
                   <div style={{ flex:1,minWidth:0 }}>
@@ -573,8 +535,7 @@ export default function App() {
                     )}
                   </div>
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); sendLike(p); }}
+                    <button onClick={e => { e.stopPropagation(); sendLike(p); }}
                       style={{
                         background: matches[p.uid] ? "#e8f5e9" : myLikes[p.uid] ? "#ffebee" : "#52a875",
                         color: matches[p.uid] ? "#52a875" : myLikes[p.uid] ? "#e57373" : "#fff",
@@ -586,8 +547,6 @@ export default function App() {
                     <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
                   </div>
                 </div>
-
-                {/* 詳細（展開時） */}
                 {isExpanded && (
                   <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
                     {p.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{p.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
@@ -656,8 +615,7 @@ export default function App() {
                 const { commons: mCommons } = myProfile ? calcScore(myProfile, m) : { commons: [] };
                 return (
                   <div key={m.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
-                    <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }}
-                      onClick={() => toggleExpand(m.uid)}>
+                    <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }} onClick={() => toggleExpand(m.uid)}>
                       <div style={{ fontSize:36,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",background:"#f0f7f2",borderRadius:"50%",flexShrink:0 }}>{m.avatar}</div>
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
@@ -736,7 +694,7 @@ export default function App() {
                     <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
                     <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
                       <strong>{n.fromUserName}</strong>さんが
-                {n.type === "like" ? "🌿 あなたのプロフィールに興味を持っています → 見てみる" : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
+                      {n.type === "like" ? "🌿 あなたのプロフィールに興味を持っています → 見てみる" : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
                       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
                     </div>
                     <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
