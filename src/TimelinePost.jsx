@@ -83,7 +83,8 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
       await push(ref(db, "notifications/" + ownerUid), {
         type: "comment", fromUserId: currentUser.uid,
         fromUserName: userName, fromUserAvatar: userAvatar,
-        postId: post.id, postOwnerId: ownerUid, postText: post.text ? post.text.slice(0, 20) : "", createdAt: Date.now()
+        postId: post.id, postOwnerId: ownerUid, postText: post.text ? post.text.slice(0, 20) : "",
+        read: false, createdAt: Date.now()
       });
     }
   };
