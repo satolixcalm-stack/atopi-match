@@ -67,6 +67,7 @@ export default function App() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(5);
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
@@ -704,22 +705,26 @@ export default function App() {
             <div style={S.card}>
               <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                {notifications.slice(0,5).map(n => (
+                {notifications.slice(0, visibleCount).map(n => (
                   <button key={n.id} onClick={() => handleNotificationClick(n)}
                     style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#f0f7f2",borderRadius:12,border:"none",cursor:"pointer",width:"100%",textAlign:"left" }}>
                     <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
                     <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
                       <strong>{n.fromUserName}</strong>さんが
-{n.type === "profile_like" || n.type === "like"
+                      {n.type === "profile_like" || n.type === "like"
                         ? "🌿 あなたに共感しています → 見てみる"
-                        : n.type === "post_like"
-                        ? ("❤️ あなたの投稿" + (n.postText ? "「" + n.postText + "...」" : "") + "にいいねしました → 見にいく")
                         : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
                       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
                     </div>
                     <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
                   </button>
                 ))}
+                {notifications.length > visibleCount && (
+                  <button onClick={() => setVisibleCount(v => v + 5)}
+                    style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"8px 0",fontSize:13,fontWeight:700,cursor:"pointer" }}>
+                    もっと見る
+                  </button>
+                )}
               </div>
             </div>
           )}
