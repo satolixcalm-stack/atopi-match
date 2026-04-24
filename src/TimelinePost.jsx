@@ -30,20 +30,40 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
     return () => off(likeRef);
   }, [ownerUid, post.id]);
 
-  // コメントリアルタイム監視
-  useEffect(() => {
-    const path = "timeline/" + ownerUid + "/" + post.id + "/comments";
-    console.log("コメント監視パス:", path);
-    const commentRef = ref(db, path);
-    const unsub = onValue(commentRef, (snap) => {
-      if (!snap.exists()) { setComments([]); return; }
-      const list = [];
-      snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-      console.log("コメント数:", list.length, "ownerUid:", ownerUid, "postId:", post.id);
-      setComments(list.slice().reverse());
+ // コメントリアルタイム監視
+useEffect(() => {
+  const path = "timeline/" + ownerUid + "/" + post.id + "/comments";
+  console.log("コメント監視パス:", path);
+
+  const commentRef = ref(db, path);
+
+  const unsub = onValue(commentRef, (snap) => {
+    // 👇 ここが今回一番重要
+    console.log("===== コメントDEBUG =====");
+    console.log("ownerUid:", ownerUid);
+    console.log("postId:", post.id);
+    console.log("snap.exists:", snap.exists());
+    console.log("snap.val():", snap.val());
+
+    if (!snap.exists()) { 
+      setComments([]); 
+      return; 
+    }
+
+    const list = [];
+
+    snap.forEach(c => {
+      console.log("1件データ:", c.key, c.val()); // 👈 何件回ってるか確認
+      list.push({ id: c.key, ...c.val() });
     });
-    return () => off(commentRef);
-  }, [ownerUid, post.id]);
+
+    console.log("最終コメント数:", list.length);
+
+    setComments(list.slice().reverse());
+  });
+
+  return () => off(commentRef);
+}, [ownerUid, post.id]);
 
   // ハイライト＆スクロール処理
   useEffect(() => {
