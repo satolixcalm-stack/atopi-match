@@ -61,18 +61,29 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
       await remove(likeRef);
     } else {
       await set(likeRef, true);
-      // いいね通知を送る（自分の投稿以外）
+      // post_like通知を送る（スパム防止：同じ投稿に1回まで）
       const snap = await get(ref(db, "users/" + currentUser.uid));
       const userName = snap.exists() ? snap.val().name : "不明";
       const userAvatar = snap.exists() ? snap.val().avatar : "🌿";
-      await push(ref(db, "notifications/" + ownerUid), {
-        type: "like",
-        fromUserId: currentUser.uid,
-        fromUserName: userName,
-        fromUserAvatar: userAvatar,
-        postId: post.id,
-        createdAt: Date.now()
-      });
+      const existingSnap = await get(ref(db, "notifications/" + ownerUid));
+      let alreadySent = false;
+      if (existingSnap.exists()) {
+        existingSnap.forEach(c => {
+          const n = c.val();
+          if (n.type === "post_like" && n.fromUserId === currentUser.uid && n.postId === post.id) alreadySent = true;
+        });
+      }
+      if (!alreadySent) {
+        await push(ref(db, "notifications/" + ownerUid), {
+          type: "post_like",
+          fromUserId: currentUser.uid,
+          fromUserName: userName,
+          fromUserAvatar: userAvatar,
+          postId: post.id,
+          postText: post.text ? post.text.slice(0, 20) : "",
+          createdAt: Date.now()
+        });
+      }
     }
   };
 
@@ -95,7 +106,7 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
       await push(ref(db, "notifications/" + ownerUid), {
         type: "comment", fromUserId: currentUser.uid,
         fromUserName: userName, fromUserAvatar: userAvatar,
-        postId: post.id, postOwnerId: ownerUid, postText: post.text.slice(0, 20), createdAt: Date.now()
+        postId: post.id, postOwnerId: ownerUid, postText: post.text ? post.text.slice(0, 20) : "", createdAt: Date.now()
       });
     }
   };
