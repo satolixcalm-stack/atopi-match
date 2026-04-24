@@ -36,7 +36,7 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
       if (!snap.exists()) { setComments([]); return; }
       const list = [];
       snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-      setComments(list.reverse());
+      setComments([...list].reverse());
     });
     return () => off(commentRef);
   }, [ownerUid, post.id]);
@@ -61,29 +61,6 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
       await remove(likeRef);
     } else {
       await set(likeRef, true);
-      // post_like通知を送る（スパム防止：同じ投稿に1回まで）
-      const snap = await get(ref(db, "users/" + currentUser.uid));
-      const userName = snap.exists() ? snap.val().name : "不明";
-      const userAvatar = snap.exists() ? snap.val().avatar : "🌿";
-      const existingSnap = await get(ref(db, "notifications/" + ownerUid));
-      let alreadySent = false;
-      if (existingSnap.exists()) {
-        existingSnap.forEach(c => {
-          const n = c.val();
-          if (n.type === "post_like" && n.fromUserId === currentUser.uid && n.postId === post.id) alreadySent = true;
-        });
-      }
-      if (!alreadySent) {
-        await push(ref(db, "notifications/" + ownerUid), {
-          type: "post_like",
-          fromUserId: currentUser.uid,
-          fromUserName: userName,
-          fromUserAvatar: userAvatar,
-          postId: post.id,
-          postText: post.text ? post.text.slice(0, 20) : "",
-          createdAt: Date.now()
-        });
-      }
     }
   };
 
