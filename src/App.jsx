@@ -230,8 +230,12 @@ export default function App() {
     onValue(ref(db, "notifications/" + uid), (snap) => {
       if (!snap.exists()) { setNotifications([]); setUnreadCount(0); return; }
       const list = [];
-      snap.forEach(c => list.push({ id: c.key, ...c.val() }));
+      snap.forEach(c => {
+        const item = { id: c.key, ...c.val() };
+        list.push(item);
+      });
       list.sort((a, b) => b.createdAt - a.createdAt);
+      console.log("通知件数:", list.length, list.map(n => n.id));
       setNotifications(list);
       setUnreadCount(list.length);
     });
