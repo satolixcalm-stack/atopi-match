@@ -31,12 +31,15 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
 
   // コメントリアルタイム監視
   useEffect(() => {
-    const commentRef = ref(db, "timeline/" + ownerUid + "/" + post.id + "/comments");
+    const path = "timeline/" + ownerUid + "/" + post.id + "/comments";
+    console.log("コメント監視パス:", path);
+    const commentRef = ref(db, path);
     const unsub = onValue(commentRef, (snap) => {
       if (!snap.exists()) { setComments([]); return; }
       const list = [];
       snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-      setComments([...list].reverse());
+      console.log("コメント数:", list.length, "ownerUid:", ownerUid, "postId:", post.id);
+      setComments(list.slice().reverse());
     });
     return () => off(commentRef);
   }, [ownerUid, post.id]);
@@ -71,6 +74,7 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
     const snap = await get(ref(db, "users/" + currentUser.uid));
     const userName = snap.exists() ? snap.val().name : "不明";
     const userAvatar = snap.exists() ? snap.val().avatar : "🌿";
+    console.log("コメント送信パス:", "timeline/" + ownerUid + "/" + post.id + "/comments");
     await push(ref(db, "timeline/" + ownerUid + "/" + post.id + "/comments"), {
       text,
       userId: currentUser.uid,
