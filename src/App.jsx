@@ -212,7 +212,7 @@ export default function App() {
 
   const deleteTimeline = async (id) => {
     if (!window.confirm("この投稿を削除しますか？")) return;
-    //await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
+    await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
   };
 
   const loadMyLikes = (uid) => {
