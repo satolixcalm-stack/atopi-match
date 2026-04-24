@@ -237,7 +237,7 @@ export default function App() {
       });
       list.sort((a, b) => b.createdAt - a.createdAt);
       setNotifications(list);
-      setUnreadCount(list.length);
+      setUnreadCount(list.filter(n => !n.read).length);
     });
   };
 
@@ -281,7 +281,7 @@ export default function App() {
         await push(ref(db, "notifications/" + target.uid), {
           type: "profile_like", fromUserId: currentUser.uid,
           fromUserName: myProfile.name, fromUserAvatar: myProfile.avatar,
-          createdAt: Date.now()
+          read: false, createdAt: Date.now()
         });
       }
     }
@@ -308,7 +308,13 @@ export default function App() {
     }
   };
 
+  const markAsRead = async (n) => {
+    if (n.read) return;
+    await set(ref(db, "notifications/" + currentUser.uid + "/" + n.id + "/read"), true);
+  };
+
   const handleNotificationClick = async (n) => {
+    await markAsRead(n);
     if (n.type === "profile_like" || n.type === "like") {
       // 共感通知 → 相手のプロフィールへ
       const snap = await get(ref(db, "users/" + n.fromUserId));
@@ -707,8 +713,11 @@ export default function App() {
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                 {notifications.slice(0, visibleCount).map(n => (
                   <button key={n.id} onClick={() => handleNotificationClick(n)}
-                    style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#f0f7f2",borderRadius:12,border:"none",cursor:"pointer",width:"100%",textAlign:"left" }}>
-                    <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
+                    style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:n.read?"#f0f7f2":"#e8f5e9",borderRadius:12,border:n.read?"none":"1.5px solid #c8e6c9",cursor:"pointer",width:"100%",textAlign:"left" }}>
+                    <span style={{ fontSize:22,flexShrink:0,position:"relative" }}>
+                      {n.fromUserAvatar}
+                      {!n.read && <span style={{ position:"absolute",top:-2,right:-2,width:8,height:8,background:"#e57373",borderRadius:"50%",display:"block" }} />}
+                    </span>
                     <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
                       <strong>{n.fromUserName}</strong>さんが
                       {n.type === "profile_like" || n.type === "like"
