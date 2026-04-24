@@ -249,7 +249,7 @@ export default function App() {
       const myNotifsSnap = await get(ref(db, "notifications/" + currentUser.uid));
       if (myNotifsSnap.exists()) {
         for (const [id, n] of Object.entries(myNotifsSnap.val())) {
-          if (n.type === "like" && n.fromUserId === target.uid) {
+          if ((n.type === "like" || n.type === "profile_like") && n.fromUserId === target.uid) {
             await remove(ref(db, "notifications/" + currentUser.uid + "/" + id));
           }
         }
@@ -257,18 +257,29 @@ export default function App() {
       const theirNotifsSnap = await get(ref(db, "notifications/" + target.uid));
       if (theirNotifsSnap.exists()) {
         for (const [id, n] of Object.entries(theirNotifsSnap.val())) {
-          if (n.type === "like" && n.fromUserId === currentUser.uid) {
+          if ((n.type === "like" || n.type === "profile_like") && n.fromUserId === currentUser.uid) {
             await remove(ref(db, "notifications/" + target.uid + "/" + id));
           }
         }
       }
     } else {
-      showToast("🌿 " + target.name + "さんにいいねしました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
-      await push(ref(db, "notifications/" + target.uid), {
-        type: "like", fromUserId: currentUser.uid,
-        fromUserName: myProfile.name, fromUserAvatar: myProfile.avatar,
-        createdAt: Date.now()
-      });
+      showToast("🌿 " + target.name + "さんに共感しました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
+      // スパム防止：同じユーザーへのprofile_like通知は1回まで
+      const existingSnap = await get(ref(db, "notifications/" + target.uid));
+      let alreadySent = false;
+      if (existingSnap.exists()) {
+        existingSnap.forEach(c => {
+          const n = c.val();
+          if (n.type === "profile_like" && n.fromUserId === currentUser.uid) alreadySent = true;
+        });
+      }
+      if (!alreadySent) {
+        await push(ref(db, "notifications/" + target.uid), {
+          type: "profile_like", fromUserId: currentUser.uid,
+          fromUserName: myProfile.name, fromUserAvatar: myProfile.avatar,
+          createdAt: Date.now()
+        });
+      }
     }
     loadAllProfiles(currentUser.uid);
   };
@@ -294,14 +305,16 @@ export default function App() {
   };
 
   const handleNotificationClick = async (n) => {
-    if (n.type === "like") {
+    if (n.type === "profile_like" || n.type === "like") {
+      // 共感通知 → 相手のプロフィールへ
       const snap = await get(ref(db, "users/" + n.fromUserId));
       if (!snap.exists()) return;
       const profile = { uid: n.fromUserId, ...snap.val() };
       setViewProfile(profile);
       await loadProfileTimeline(n.fromUserId, true);
       setScreen("viewProfile");
-    } else if (n.type === "comment") {
+    } else if (n.type === "post_like" || n.type === "comment") {
+      // 投稿いいね・コメント通知 → 自分のマイページへ
       setHighlightedPostId(null);
       setScreen("mypage");
       if (n.postId) setTimeout(() => setHighlightedPostId(n.postId), 400);
@@ -694,7 +707,11 @@ export default function App() {
                     <span style={{ fontSize:22,flexShrink:0 }}>{n.fromUserAvatar}</span>
                     <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
                       <strong>{n.fromUserName}</strong>さんが
-                      {n.type === "like" ? "🌿 あなたのプロフィールに興味を持っています → 見てみる" : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
+{n.type === "profile_like" || n.type === "like"
+                        ? "🌿 あなたに共感しています → 見てみる"
+                        : n.type === "post_like"
+                        ? ("❤️ あなたの投稿" + (n.postText ? "「" + n.postText + "...」" : "") + "にいいねしました → 見にいく")
+                        : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
                       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
                     </div>
                     <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
