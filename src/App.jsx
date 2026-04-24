@@ -235,7 +235,6 @@ export default function App() {
         list.push(item);
       });
       list.sort((a, b) => b.createdAt - a.createdAt);
-      console.log("通知件数:", list.length, list.map(n => n.id));
       setNotifications(list);
       setUnreadCount(list.length);
     });
