@@ -274,7 +274,7 @@ export default function App() {
         }
       }
     } else {
-      showToast("🌿 " + target.name + "さんに共感しました！お互いに共感するとチャットができます");
+      showToast("🌿 共感しました｜お互いに共感でチャットできます");
       // スパム防止：同じユーザーへのprofile_like通知は1回まで
       const existingSnap = await get(ref(db, "notifications/" + target.uid));
       let alreadySent = false;
