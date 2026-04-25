@@ -345,6 +345,12 @@ export default function App() {
     ? allProfiles.map(p => ({ ...p, ...calcScore(myProfile, p) })).sort((a, b) => b.score - a.score)
     : allProfiles;
 
+  const toastEl = toast ? (
+    <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
+      {toast}
+    </div>
+  ) : null;
+
   if (screen === "viewProfile" && !viewProfile) {
     return <div style={{ padding:20,textAlign:"center",color:"#6b8f71" }}>読み込み中...</div>;
   }
@@ -435,11 +441,6 @@ export default function App() {
     </div>
   ) : null;
 
-  const toastEl = toast ? (
-    <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
-      {toast}
-    </div>
-  ) : null;
 
   if (screen === "chat" && (!chatTarget || !currentUser || !myProfile)) { setScreen("matches"); return null; }
   if (screen === "chat") return (
