@@ -254,7 +254,7 @@ export default function App() {
         if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
         msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
         const last = msgs[msgs.length - 1];
-        const hasUnread = !!(last && last.senderId && last.senderId !== currentUser.uid);
+        const hasUnread = !!(last && last.senderUid && last.senderUid !== currentUser.uid);
         setUnreadChats(prev => ({ ...prev, [m.uid]: hasUnread }));
       });
     });
