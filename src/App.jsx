@@ -244,7 +244,9 @@ export default function App() {
   };
 
   const loadUnreadChats = (matchesData) => {
+    if (!currentUser) return;
     Object.values(matchesData).forEach(m => {
+      if (!m.uid) return;
       const chatId = [currentUser.uid, m.uid].sort().join("_");
       onValue(ref(db, "chats/" + chatId + "/messages"), (snap) => {
         if (!snap.exists()) return;
