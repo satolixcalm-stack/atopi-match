@@ -375,7 +375,7 @@ export default function App() {
               {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
               {viewProfile.uid !== currentUser.uid && !matches[viewProfile.uid] && (
                 <>
-                  <button onClick={() => { sendLike(viewProfile); if (!myLikes[viewProfile.uid]) showToast("お互いに共感するとチャットができます"); }}
+                  <button onClick={() => { const isNew = !myLikes[viewProfile.uid]; sendLike(viewProfile); if (isNew) showToast("🌿 共感しました｜お互いに共感でチャットできます"); }}
                     style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,fontSize:14,fontWeight:700,cursor:"pointer",
                       background: myLikes[viewProfile.uid] ? "#d4edda" : "#f0f0f0",
                       color: myLikes[viewProfile.uid] ? "#2e7d32" : "#666",
