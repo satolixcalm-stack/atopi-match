@@ -242,6 +242,13 @@ export default function App() {
   };
 
   const sendLike = async (target) => {
+    if (matches[target.uid]) return; // マッチ済みは変更不可
+    // トグル処理
+    if (myLikes[target.uid]) {
+      await remove(ref(db, "likes/" + currentUser.uid + "/" + target.uid));
+      setMyLikes(prev => ({ ...prev, [target.uid]: false }));
+      return;
+    }
     const theirLike = await get(ref(db, "likes/" + target.uid + "/" + currentUser.uid));
     await set(ref(db, "likes/" + currentUser.uid + "/" + target.uid), true);
     setMyLikes(prev => ({ ...prev, [target.uid]: true }));
@@ -560,12 +567,13 @@ export default function App() {
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
                     <button onClick={e => { e.stopPropagation(); sendLike(p); }}
                       style={{
-                        background: matches[p.uid] ? "#e8f5e9" : myLikes[p.uid] ? "#ffebee" : "#52a875",
-                        color: matches[p.uid] ? "#52a875" : myLikes[p.uid] ? "#e57373" : "#fff",
-                        border: myLikes[p.uid] && !matches[p.uid] ? "1.5px solid #e57373" : "none",
-                        borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"
+                        background: matches[p.uid] ? "#ffebee" : myLikes[p.uid] ? "#e8f5e9" : "#f0f7f2",
+                        color: matches[p.uid] ? "#e57373" : myLikes[p.uid] ? "#3d6b4f" : "#6b8f71",
+                        border: matches[p.uid] ? "1.5px solid #f48fb1" : myLikes[p.uid] ? "1.5px solid #c8e6c9" : "1.5px solid #c8e6c9",
+                        borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:matches[p.uid]?"default":"pointer",
+                        pointerEvents: matches[p.uid] ? "none" : "auto"
                       }}>
-                      {matches[p.uid] ? "マッチ済み💚" : myLikes[p.uid] ? "共感済み❤️" : "共感する♥"}
+                      {matches[p.uid] ? "❤️ マッチ済" : myLikes[p.uid] ? "🌿 共感済" : "🌿 共感する"}
                     </button>
                     <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
                   </div>
