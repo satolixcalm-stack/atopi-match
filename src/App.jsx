@@ -68,6 +68,7 @@ export default function App() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [visibleCount, setVisibleCount] = useState(5);
+  const [unreadChats, setUnreadChats] = useState({});
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
@@ -121,6 +122,7 @@ export default function App() {
         if (s.exists()) enriched[uid] = { uid, ...s.val(), ...raw[uid] };
       }
       setMatches(enriched);
+      loadUnreadChats(enriched);
     });
   };
 
@@ -238,6 +240,18 @@ export default function App() {
       list.sort((a, b) => b.createdAt - a.createdAt);
       setNotifications(list);
       setUnreadCount(list.filter(n => !n.read).length);
+    });
+  };
+
+  const loadUnreadChats = (matchesData) => {
+    Object.values(matchesData).forEach(m => {
+      const chatId = [currentUser.uid, m.uid].sort().join("_");
+      onValue(ref(db, "chats/" + chatId + "/messages"), (snap) => {
+        if (!snap.exists()) return;
+        const msgs = Object.values(snap.val());
+        const hasUnread = msgs.some(msg => msg.senderId !== currentUser.uid && !msg.read);
+        setUnreadChats(prev => ({ ...prev, [m.uid]: hasUnread }));
+      });
     });
   };
 
@@ -400,7 +414,7 @@ export default function App() {
                   </div>
                   <button onClick={() => { setChatTarget(matches[viewProfile.uid]); setScreen("chat"); }}
                     style={{ ...S.btn,marginTop:8,padding:"12px 0",fontSize:14 }}>
-                    💬 チャットする
+                    💬 チャット
                   </button>
                 </>
               )}
@@ -591,7 +605,7 @@ export default function App() {
                     {matches[p.uid] && (
                       <button onClick={e => { e.stopPropagation(); setChatTarget(matches[p.uid]); setScreen("chat"); }}
                         style={{ background:"#52a875",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                        💬 チャットする
+                        💬 チャット
                       </button>
                     )}
                     <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
@@ -672,10 +686,13 @@ export default function App() {
                         )}
                         <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ · {isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
                       </div>
-                      <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }}
-                        style={{ background:"#52a875",border:"none",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",color:"#fff",flexShrink:0 }}>
-                        💬 チャットする
-                      </button>
+                      <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:2 }}>
+                        <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }}
+                          style={{ background:"#52a875",border:"none",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",color:"#fff" }}>
+                          💬 チャット
+                        </button>
+                        {unreadChats[m.uid] && <span style={{ fontSize:10,color:"#e57373",fontWeight:700 }}>🔴 新着あり</span>}
+                      </div>
                     </div>
                     {isExpanded && (
                       <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
