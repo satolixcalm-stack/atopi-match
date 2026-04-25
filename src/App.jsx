@@ -242,12 +242,11 @@ export default function App() {
   };
 
   const sendLike = async (target) => {
-    if (matches[target.uid]) return false; // マッチ済みは変更不可
-    // トグル処理
+    if (matches[target.uid]) return { type: "none" };
     if (myLikes[target.uid]) {
       await remove(ref(db, "likes/" + currentUser.uid + "/" + target.uid));
       setMyLikes(prev => ({ ...prev, [target.uid]: false }));
-      return false; // 解除
+      return { type: "removed" };
     }
     const theirLike = await get(ref(db, "likes/" + target.uid + "/" + currentUser.uid));
     await set(ref(db, "likes/" + currentUser.uid + "/" + target.uid), true);
@@ -256,7 +255,6 @@ export default function App() {
       const matchData = { matchedAt: Date.now() };
       await set(ref(db, "matches/" + currentUser.uid + "/" + target.uid), matchData);
       await set(ref(db, "matches/" + target.uid + "/" + currentUser.uid), matchData);
-      showToast("💚 " + target.name + "さんとマッチしました！");
       const myNotifsSnap = await get(ref(db, "notifications/" + currentUser.uid));
       if (myNotifsSnap.exists()) {
         for (const [id, n] of Object.entries(myNotifsSnap.val())) {
@@ -273,6 +271,8 @@ export default function App() {
           }
         }
       }
+      loadAllProfiles(currentUser.uid);
+      return { type: "match" };
     } else {
       const existingSnap = await get(ref(db, "notifications/" + target.uid));
       let alreadySent = false;
@@ -289,9 +289,9 @@ export default function App() {
           read: false, createdAt: Date.now()
         });
       }
+      loadAllProfiles(currentUser.uid);
+      return { type: "like" };
     }
-    loadAllProfiles(currentUser.uid);
-    return true; // 新規共感
   };
 
   const toggleExpand = (uid) => {
@@ -382,7 +382,7 @@ export default function App() {
               {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
               {viewProfile.uid !== currentUser.uid && !matches[viewProfile.uid] && (
                 <>
-                  <button onClick={async () => { const isNew = await sendLike(viewProfile); if (isNew) showToast("🌿 共感しました｜お互いに共感でチャットできます"); }}
+                  <button onClick={async () => { const r = await sendLike(viewProfile); if (r.type==="match") showToast("🎉 マッチしました！チャットできます"); else if (r.type==="like") showToast("🌿 共感しました｜お互いに共感でチャットできます"); }}
                     style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,fontSize:14,fontWeight:700,cursor:"pointer",
                       background: myLikes[viewProfile.uid] ? "#d4edda" : "#f0f0f0",
                       color: myLikes[viewProfile.uid] ? "#2e7d32" : "#666",
@@ -578,7 +578,7 @@ export default function App() {
                     )}
                   </div>
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
-                    <button onClick={async e => { e.stopPropagation(); const isNew = await sendLike(p); if (isNew) showToast("🌿 共感しました｜お互いに共感でチャットできます"); }}
+                    <button onClick={async e => { e.stopPropagation(); const r = await sendLike(p); if (r.type==="match") showToast("🎉 マッチしました！チャットできます"); else if (r.type==="like") showToast("🌿 共感しました｜お互いに共感でチャットできます"); }}
                       style={{
                         background: matches[p.uid] ? "#ffebee" : myLikes[p.uid] ? "#d4edda" : "#f0f0f0",
                         color: matches[p.uid] ? "#e57373" : myLikes[p.uid] ? "#2e7d32" : "#666",
