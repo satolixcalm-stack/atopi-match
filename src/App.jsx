@@ -274,7 +274,7 @@ export default function App() {
         }
       }
     } else {
-      showToast("🌿 " + target.name + "さんに共感しました！共通：" + (calcScore(myProfile, target).commons.join("・") || "なし"));
+      showToast("🌿 " + target.name + "さんに共感しました！お互いに共感するとチャットができます");
       // スパム防止：同じユーザーへのprofile_like通知は1回まで
       const existingSnap = await get(ref(db, "notifications/" + target.uid));
       let alreadySent = false;
@@ -374,12 +374,16 @@ export default function App() {
               {viewProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{viewProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
               {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
               {viewProfile.uid !== currentUser.uid && !matches[viewProfile.uid] && (
-                <button onClick={() => sendLike(viewProfile)}
-                  style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,border:"none",cursor:"pointer",fontSize:14,fontWeight:700,
-                    background: myLikes[viewProfile.uid] ? "#ffebee" : "#52a875",
-                    color: myLikes[viewProfile.uid] ? "#e57373" : "#fff" }}>
-                  {myLikes[viewProfile.uid] ? "💌 共感済み" : "❤️ 共感する"}
-                </button>
+                <>
+                  <button onClick={() => { sendLike(viewProfile); if (!myLikes[viewProfile.uid]) showToast("お互いに共感するとチャットできます"); }}
+                    style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,fontSize:14,fontWeight:700,cursor:"pointer",
+                      background: myLikes[viewProfile.uid] ? "#d4edda" : "#f0f0f0",
+                      color: myLikes[viewProfile.uid] ? "#2e7d32" : "#666",
+                      border: myLikes[viewProfile.uid] ? "1px solid #4caf50" : "1px solid #ccc"
+                    }}>
+                    {myLikes[viewProfile.uid] ? "🌿 共感済" : "🌿 共感する"}
+                  </button>
+                </>
               )}
               {matches[viewProfile.uid] && (
                 <button onClick={() => { setChatTarget(matches[viewProfile.uid]); setScreen("chat"); }}
