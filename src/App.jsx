@@ -393,10 +393,16 @@ export default function App() {
                 </>
               )}
               {matches[viewProfile.uid] && (
-                <button onClick={() => { setChatTarget(matches[viewProfile.uid]); setScreen("chat"); }}
-                  style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,border:"none",cursor:"pointer",fontSize:14,fontWeight:700,background:"#52a875",color:"#fff" }}>
-                  💬 チャットする
-                </button>
+                <>
+                  <div style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,fontSize:14,fontWeight:700,textAlign:"center",
+                    background:"#ffebee",color:"#e57373",border:"1px solid #f48fb1" }}>
+                    ❤️ マッチ済
+                  </div>
+                  <button onClick={() => { setChatTarget(matches[viewProfile.uid]); setScreen("chat"); }}
+                    style={{ ...S.btn,marginTop:8,padding:"12px 0",fontSize:14 }}>
+                    💬 チャットする
+                  </button>
+                </>
               )}
             </div>
             {tl.length > 0 && (
@@ -582,6 +588,12 @@ export default function App() {
                       }}>
                       {matches[p.uid] ? "❤️ マッチ済" : myLikes[p.uid] ? "🌿 共感済" : "🌿 共感する"}
                     </button>
+                    {matches[p.uid] && (
+                      <button onClick={e => { e.stopPropagation(); setChatTarget(matches[p.uid]); setScreen("chat"); }}
+                        style={{ background:"#52a875",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+                        💬 チャット
+                      </button>
+                    )}
                     <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
                   </div>
                 </div>
