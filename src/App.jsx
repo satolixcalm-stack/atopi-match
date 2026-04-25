@@ -345,7 +345,9 @@ export default function App() {
     ? allProfiles.map(p => ({ ...p, ...calcScore(myProfile, p) })).sort((a, b) => b.score - a.score)
     : allProfiles;
 
-  if (screen === "viewProfile" && !viewProfile) { setScreen("browse"); return null; }
+  if (screen === "viewProfile" && !viewProfile) {
+    return <div style={{ padding:20,textAlign:"center",color:"#6b8f71" }}>読み込み中...</div>;
+  }
   if (screen === "viewProfile") {
     const tl = profileTimelines[viewProfile.uid] || [];
     const tlPage = profileTimelinePages[viewProfile.uid] || 0;
