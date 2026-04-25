@@ -122,7 +122,6 @@ export default function App() {
         if (s.exists()) enriched[uid] = { uid, ...s.val(), ...raw[uid] };
       }
       setMatches(enriched);
-      loadUnreadChats(enriched);
     });
   };
 
@@ -243,55 +242,23 @@ export default function App() {
     });
   };
 
- const loadUnreadChats = (matchesData) => {
-  if (!currentUser) return;
-
-  console.log("===== 未読チェック開始 =====");
-
-  Object.values(matchesData).forEach(m => {
-    if (!m.uid) return;
-
-    const chatId = [currentUser.uid, m.uid].sort().join("_");
-    console.log("chatId:", chatId);
-
-    onValue(ref(db, "chats/" + chatId + "/messages"), (snap) => {
-      console.log("snap.exists:", snap.exists());
-
-      if (!snap.exists()) {
-        console.log("メッセージなし");
-        setUnreadChats(prev => ({ ...prev, [m.uid]: false }));
-        return;
-      }
-
-      const raw = snap.val();
-      console.log("raw messages:", raw);
-
-      const msgs = Object.values(raw || {}).filter(Boolean);
-      console.log("msgs:", msgs);
-
-      if (msgs.length === 0) {
-        console.log("msgs空");
-        setUnreadChats(prev => ({ ...prev, [m.uid]: false }));
-        return;
-      }
-
-      msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-      const last = msgs[msgs.length - 1];
-
-      console.log("last message:", last);
-      console.log("currentUser:", currentUser.uid);
-
-      const hasUnread = !!(last && last.senderId && last.senderId !== currentUser.uid);
-
-      console.log("hasUnread:", hasUnread, "対象UID:", m.uid);
-
-      setUnreadChats(prev => ({
-        ...prev,
-        [m.uid]: hasUnread
-      }));
+  const loadUnreadChats = (matchesData) => {
+    console.log("loadUnreadChats実行", currentUser?.uid, Object.keys(matchesData).length + "件");
+    if (!currentUser) return;
+    Object.values(matchesData).forEach(m => {
+      if (!m.uid) return;
+      const chatId = [currentUser.uid, m.uid].sort().join("_");
+      onValue(ref(db, "chats/" + chatId + "/messages"), (snap) => {
+        if (!snap.exists()) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+        const msgs = Object.values(snap.val() || {}).filter(Boolean);
+        if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+        msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        const last = msgs[msgs.length - 1];
+        const hasUnread = !!(last && last.senderId && last.senderId !== currentUser.uid);
+        setUnreadChats(prev => ({ ...prev, [m.uid]: hasUnread }));
+      });
     });
-  });
-};
+  };
 
   const sendLike = async (target) => {
     if (matches[target.uid]) return { type: "none" };
@@ -345,6 +312,13 @@ export default function App() {
       return { type: "like" };
     }
   };
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (Object.keys(matches).length > 0) {
+      loadUnreadChats(matches);
+    }
+  }, [currentUser?.uid, JSON.stringify(Object.keys(matches))]);
 
   const toggleExpand = (uid) => {
     if (expandedUid === uid) {
