@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { db } from "./firebase.js";
 import { ref, get, set, remove, onValue, off, push } from "firebase/database";
@@ -14,7 +13,6 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
   const isHighlighted = post.id === highlightedPostId;
   const isOwner = currentUser.uid === ownerUid;
 
-  // いいねリアルタイム監視
   useEffect(() => {
     const likeRef = ref(db, "timeline/" + ownerUid + "/" + post.id + "/likes");
     const unsub = onValue(likeRef, async (snap) => {
@@ -30,42 +28,20 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
     return () => off(likeRef);
   }, [ownerUid, post.id]);
 
- // コメントリアルタイム監視
-useEffect(() => {
-  const path = "timeline/" + ownerUid + "/" + post.id + "/comments";
-  console.log("コメント監視パス:", path);
-
-  const commentRef = ref(db, path);
-
-  const unsub = onValue(commentRef, (snap) => {
-    // 👇 ここが今回一番重要
-    console.log("===== コメントDEBUG =====");
-    console.log("ownerUid:", ownerUid);
-    console.log("postId:", post.id);
-    console.log("snap.exists:", snap.exists());
-    console.log("snap.val():", snap.val());
-
-    if (!snap.exists()) { 
-      setComments([]); 
-      return; 
-    }
-
-    const list = [];
-
-    snap.forEach(c => {
-      console.log("1件データ:", c.key, c.val()); // 👈 何件回ってるか確認
-      list.push({ id: c.key, ...c.val() });
+  useEffect(() => {
+    const commentRef = ref(db, "timeline/" + ownerUid + "/" + post.id + "/comments");
+    const unsub = onValue(commentRef, (snap) => {
+      if (!snap.exists()) { setComments([]); return; }
+      const val = snap.val();
+      const list = Object.entries(val)
+        .filter(([, v]) => v && v.text && v.createdAt)
+        .map(([key, v]) => ({ id: key, ...v }))
+        .sort((a, b) => b.createdAt - a.createdAt);
+      setComments(list);
     });
+    return () => off(commentRef);
+  }, [ownerUid, post.id]);
 
-    console.log("最終コメント数:", list.length);
-
-    setComments(list.slice().reverse());
-  });
-
-  return () => off(commentRef);
-}, [ownerUid, post.id]);
-
-  // ハイライト＆スクロール処理
   useEffect(() => {
     if (isHighlighted && postRef.current) {
       setTimeout(() => {
@@ -95,7 +71,6 @@ useEffect(() => {
     const snap = await get(ref(db, "users/" + currentUser.uid));
     const userName = snap.exists() ? snap.val().name : "不明";
     const userAvatar = snap.exists() ? snap.val().avatar : "🌿";
-    console.log("コメント送信パス:", "timeline/" + ownerUid + "/" + post.id + "/comments");
     await push(ref(db, "timeline/" + ownerUid + "/" + post.id + "/comments"), {
       text,
       userId: currentUser.uid,
@@ -103,12 +78,12 @@ useEffect(() => {
       userAvatar,
       createdAt: Date.now(),
     });
-    // コメント通知を投稿者に送る（自分の投稿以外）
     if (ownerUid !== currentUser.uid) {
       await push(ref(db, "notifications/" + ownerUid), {
         type: "comment", fromUserId: currentUser.uid,
         fromUserName: userName, fromUserAvatar: userAvatar,
-        postId: post.id, postOwnerId: ownerUid, postText: post.text ? post.text.slice(0, 20) : "",
+        postId: post.id, postOwnerId: ownerUid,
+        postText: post.text ? post.text.slice(0, 20) : "",
         read: false, createdAt: Date.now()
       });
     }
@@ -129,7 +104,6 @@ useEffect(() => {
       <div style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,paddingRight:canDelete?20:0 }}>{post.text}</div>
       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:4 }}>{new Date(post.createdAt).toLocaleDateString("ja-JP")}</div>
 
-      {/* いいねエリア */}
       <div style={{ display:"flex",alignItems:"center",gap:10,marginTop:8,flexWrap:"wrap" }}>
         {!isOwner && (
           <button onClick={toggleLike} style={{
@@ -158,7 +132,6 @@ useEffect(() => {
         )}
       </div>
 
-      {/* コメントエリア */}
       <div style={{ marginTop:10,borderTop:"1px solid #e0ede5",paddingTop:8 }}>
         {displayedComments.length > 0 && (
           <div style={{ display:"flex",flexDirection:"column",gap:6,marginBottom:8 }}>
