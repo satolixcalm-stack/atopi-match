@@ -249,9 +249,12 @@ export default function App() {
       if (!m.uid) return;
       const chatId = [currentUser.uid, m.uid].sort().join("_");
       onValue(ref(db, "chats/" + chatId + "/messages"), (snap) => {
-        if (!snap.exists()) return;
-        const msgs = Object.values(snap.val());
-        const hasUnread = msgs.some(msg => msg.senderId !== currentUser.uid && !msg.read);
+        if (!snap.exists()) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+        const msgs = Object.values(snap.val() || {}).filter(Boolean);
+        if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+        msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        const last = msgs[msgs.length - 1];
+        const hasUnread = !!(last && last.senderId && last.senderId !== currentUser.uid);
         setUnreadChats(prev => ({ ...prev, [m.uid]: hasUnread }));
       });
     });
