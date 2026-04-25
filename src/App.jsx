@@ -58,8 +58,6 @@ export default function App() {
   const [timelinePage, setTimelinePage] = useState(0);
   const [expandedUid, setExpandedUid] = useState(null);
   const [myLikes, setMyLikes] = useState({});
-  const [interests, setInterests] = useState({});
-  const [mutuals, setMutuals] = useState({});
   const [profileTimelines, setProfileTimelines] = useState({});
   const [profileTimelinePages, setProfileTimelinePages] = useState({});
   const [usersCache, setUsersCache] = useState({});
@@ -87,7 +85,6 @@ export default function App() {
           loadMatches(user.uid);
           loadMyTimeline(user.uid);
           loadMyLikes(user.uid);
-          loadInterests(user.uid);
           loadNotifications(user.uid);
           if (!localStorage.getItem('tutorial_shown')) setShowTutorial(true);
           setScreen("browse");
@@ -110,12 +107,7 @@ export default function App() {
     const snap = await get(ref(db, "users"));
     if (!snap.exists()) return;
     const all = [];
-    for (const c of snap.val() ? Object.entries(snap.val()) : []) {
-      const [uid, val] = c;
-      if (uid === myUid) continue;
-      const theirInterestSnap = await get(ref(db, "interests/" + uid + "/" + myUid));
-      all.push({ uid, ...val, _theirInterest: theirInterestSnap.exists() });
-    }
+    snap.forEach(c => { if (c.key !== myUid) all.push({ uid: c.key, ...c.val() }); });
     setAllProfiles(all);
   };
 
@@ -228,54 +220,6 @@ export default function App() {
     onValue(ref(db, "likes/" + uid), (snap) => {
       setMyLikes(snap.exists() ? snap.val() : {});
     });
-  };
-
-  const loadInterests = (uid) => {
-    onValue(ref(db, "interests/" + uid), (snap) => {
-      setInterests(snap.exists() ? snap.val() : {});
-    });
-  };
-
-  const toggleInterest = async (target) => {
-    const myInterestRef = ref(db, "interests/" + currentUser.uid + "/" + target.uid);
-    const theirInterest = await get(ref(db, "interests/" + target.uid + "/" + currentUser.uid));
-    if (interests[target.uid]) {
-      // 取り消し
-      await remove(myInterestRef);
-      setMutuals(prev => ({ ...prev, [target.uid]: false }));
-    } else {
-      // 共感
-      await set(myInterestRef, true);
-      // 通知送信
-      const existingSnap = await get(ref(db, "notifications/" + target.uid));
-      let alreadySent = false;
-      if (existingSnap.exists()) {
-        existingSnap.forEach(c => {
-          const n = c.val();
-          if (n.type === "profile_like" && n.fromUserId === currentUser.uid) alreadySent = true;
-        });
-      }
-      if (!alreadySent) {
-        await push(ref(db, "notifications/" + target.uid), {
-          type: "profile_like", fromUserId: currentUser.uid,
-          fromUserName: myProfile.name, fromUserAvatar: myProfile.avatar,
-          read: false, createdAt: Date.now()
-        });
-      }
-      if (theirInterest.exists()) {
-        setMutuals(prev => ({ ...prev, [target.uid]: true }));
-        showToast("🌿 " + target.name + "さんと両想いです！マッチしますか？");
-      }
-    }
-  };
-
-  const createMatch = async (target) => {
-    const matchData = { matchedAt: Date.now() };
-    await set(ref(db, "matches/" + currentUser.uid + "/" + target.uid), matchData);
-    await set(ref(db, "matches/" + target.uid + "/" + currentUser.uid), matchData);
-    setMutuals(prev => ({ ...prev, [target.uid]: false }));
-    showToast("💚 " + target.name + "さんとマッチしました！");
-    loadAllProfiles(currentUser.uid);
   };
 
   const showToast = (msg, duration = 3000) => {
@@ -392,11 +336,7 @@ export default function App() {
   }));
 
   const sortedProfiles = myProfile
-    ? allProfiles.map(p => ({
-        ...p,
-        ...calcScore(myProfile, p),
-        _mutual: !!(interests[p.uid] && p._theirInterest)
-      })).sort((a, b) => b.score - a.score)
+    ? allProfiles.map(p => ({ ...p, ...calcScore(myProfile, p) })).sort((a, b) => b.score - a.score)
     : allProfiles;
 
   if (screen === "viewProfile" && !viewProfile) { setScreen("browse"); return null; }
@@ -618,27 +558,15 @@ export default function App() {
                     )}
                   </div>
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
-                    {matches[p.uid] ? (
-                      <span style={{ background:"#e8f5e9",color:"#52a875",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700 }}>マッチ済み💚</span>
-                    ) : (
-                      <div style={{ display:"flex",flexDirection:"column",gap:4,alignItems:"center" }}>
-                        <button onClick={e => { e.stopPropagation(); toggleInterest(p); }}
-                          style={{
-                            background: interests[p.uid] ? "#e8f5e9" : "#52a875",
-                            color: interests[p.uid] ? "#3d6b4f" : "#fff",
-                            border: interests[p.uid] ? "1.5px solid #c8e6c9" : "none",
-                            borderRadius:20,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer"
-                          }}>
-                          {interests[p.uid] ? "🌿 共感済" : "🌿 共感する"}
-                        </button>
-                        {(mutuals[p.uid] || (interests[p.uid] && p._mutual)) && (
-                          <button onClick={e => { e.stopPropagation(); createMatch(p); }}
-                            style={{ background:"#52a875",color:"#fff",border:"none",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer" }}>
-                            ❤️ マッチする
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <button onClick={e => { e.stopPropagation(); sendLike(p); }}
+                      style={{
+                        background: matches[p.uid] ? "#e8f5e9" : myLikes[p.uid] ? "#ffebee" : "#52a875",
+                        color: matches[p.uid] ? "#52a875" : myLikes[p.uid] ? "#e57373" : "#fff",
+                        border: myLikes[p.uid] && !matches[p.uid] ? "1.5px solid #e57373" : "none",
+                        borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"
+                      }}>
+                      {matches[p.uid] ? "マッチ済み💚" : myLikes[p.uid] ? "共感済み❤️" : "共感する♥"}
+                    </button>
                     <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
                   </div>
                 </div>
