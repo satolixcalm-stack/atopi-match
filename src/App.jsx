@@ -673,6 +673,8 @@ export default function App() {
           ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               {Object.values(matches).map(m => {
+                console.log("m.uid:", m.uid);
+  console.log("unreadMap:", unreadMap);
                 const isExpanded = expandedUid === m.uid;
                 const tl = profileTimelines[m.uid] || [];
                 const tlPage = profileTimelinePages[m.uid] || 0;
