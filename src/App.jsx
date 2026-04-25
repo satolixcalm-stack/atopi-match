@@ -591,7 +591,7 @@ export default function App() {
                     {matches[p.uid] && (
                       <button onClick={e => { e.stopPropagation(); setChatTarget(matches[p.uid]); setScreen("chat"); }}
                         style={{ background:"#52a875",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                        💬 チャット
+                        💬 チャットする
                       </button>
                     )}
                     <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
@@ -620,12 +620,7 @@ export default function App() {
                         </div>
                       </>
                     )}
-                    {matches[p.uid] && (
-                      <button onClick={() => { setChatTarget(p); setScreen("chat"); }}
-                        style={{ ...S.btn,marginTop:12,padding:"10px 0",fontSize:13 }}>
-                        💬 チャットする
-                      </button>
-                    )}
+
                   </div>
                 )}
               </div>
@@ -678,8 +673,8 @@ export default function App() {
                         <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ · {isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
                       </div>
                       <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }}
-                        style={{ background:"#52a875",border:"none",borderRadius:"50%",width:40,height:40,fontSize:18,cursor:"pointer",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                        💬
+                        style={{ background:"#52a875",border:"none",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",color:"#fff",flexShrink:0 }}>
+                        💬 チャットする
                       </button>
                     </div>
                     {isExpanded && (
