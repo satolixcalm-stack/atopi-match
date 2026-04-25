@@ -567,9 +567,9 @@ export default function App() {
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
                     <button onClick={e => { e.stopPropagation(); sendLike(p); }}
                       style={{
-                        background: matches[p.uid] ? "#ffebee" : myLikes[p.uid] ? "#e8f5e9" : "#f0f7f2",
-                        color: matches[p.uid] ? "#e57373" : myLikes[p.uid] ? "#3d6b4f" : "#6b8f71",
-                        border: matches[p.uid] ? "1.5px solid #f48fb1" : myLikes[p.uid] ? "1.5px solid #c8e6c9" : "1.5px solid #c8e6c9",
+                        background: matches[p.uid] ? "#ffebee" : myLikes[p.uid] ? "#d4edda" : "#f0f0f0",
+                        color: matches[p.uid] ? "#e57373" : myLikes[p.uid] ? "#2e7d32" : "#666",
+                        border: matches[p.uid] ? "1px solid #f48fb1" : myLikes[p.uid] ? "1px solid #4caf50" : "1px solid #ccc",
                         borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:matches[p.uid]?"default":"pointer",
                         pointerEvents: matches[p.uid] ? "none" : "auto"
                       }}>
