@@ -68,6 +68,7 @@ export default function App() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [visibleCount, setVisibleCount] = useState(5);
+  const [filterMode, setFilterMode] = useState("all");
   const [unreadChats, setUnreadChats] = useState({});
 
   useEffect(() => {
@@ -371,6 +372,12 @@ export default function App() {
     ? allProfiles.map(p => ({ ...p, ...calcScore(myProfile, p) })).sort((a, b) => b.score - a.score)
     : allProfiles;
 
+  const filteredProfiles = sortedProfiles.filter(p => {
+    if (matches[p.uid]) return false;
+    if (filterMode === "liked") return !!myLikes[p.uid];
+    return true;
+  });
+
   const toastEl = toast ? (
     <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
       {toast}
@@ -580,13 +587,24 @@ export default function App() {
       <div style={S.page}>
         <div style={S.bar}><span style={S.barTitle}>🌿 自分と似ている人</span><button style={S.ghost} onClick={() => signOut(auth)}>退出</button></div>
         <div style={{ flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:12 }}>
-          {sortedProfiles.length === 0 ? (
+          {/* フィルターUI */}
+          <div style={{ display:"flex",gap:8,marginBottom:4 }}>
+            <button onClick={() => setFilterMode("all")}
+              style={{ background:filterMode==="all"?"#52a875":"#f0f0f0",color:filterMode==="all"?"#fff":"#666",border:filterMode==="all"?"none":"1px solid #ccc",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+              すべて
+            </button>
+            <button onClick={() => setFilterMode("liked")}
+              style={{ background:filterMode==="liked"?"#52a875":"#f0f0f0",color:filterMode==="liked"?"#fff":"#666",border:filterMode==="liked"?"none":"1px solid #ccc",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+              共感済み
+            </button>
+          </div>
+          {filteredProfiles.length === 0 ? (
             <div style={S.empty}>
               <div style={{ fontSize:52 }}>🌿</div>
               <h3 style={{ color:"#3d6b4f",marginTop:12 }}>まだユーザーがいません</h3>
               <p style={{ color:"#6b8f71",fontSize:13 }}>友達を招待してみましょう</p>
             </div>
-          ) : sortedProfiles.map(p => {
+          ) : filteredProfiles.map(p => {
             const isExpanded = expandedUid === p.uid;
             const tl = profileTimelines[p.uid] || [];
             const tlPage = profileTimelinePages[p.uid] || 0;
