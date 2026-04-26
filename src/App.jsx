@@ -380,6 +380,29 @@ export default function App() {
     })
     .sort((a, b) => (myLikes[b.uid] ? 1 : 0) - (myLikes[a.uid] ? 1 : 0));
 
+  const tutorialEl = showTutorial ? (
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center" }}>
+      <div style={{ background:"#fff",borderRadius:24,padding:"32px 28px",maxWidth:320,margin:"0 16px",textAlign:"center",boxShadow:"0 16px 48px rgba(0,0,0,0.2)" }}>
+        <div style={{ fontSize:52,marginBottom:12 }}>🌿</div>
+        <h2 style={{ fontSize:18,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>AtopiMatchへようこそ</h2>
+        <p style={{ fontSize:14,color:"#6b8f71",lineHeight:1.8,marginBottom:20 }}>
+          このアプリは、<br/>
+          <strong>「共感 → マッチ → チャット」</strong>でつながります。<br/><br/>
+          <span style={{ fontSize:13 }}>
+            ① 気になる人に「共感」する<br/>
+            ② お互いに共感すると「マッチ」<br/>
+            ③ マッチすると「チャット」ができます
+          </span><br/><br/>
+          まずは気になる人に共感してみましょう🌿
+        </p>
+        <button onClick={() => { setShowTutorial(false); localStorage.setItem('tutorial_shown','1'); }}
+          style={{ width:"100%",background:"#52a875",color:"#fff",border:"none",borderRadius:14,padding:"14px 0",fontSize:15,fontWeight:700,cursor:"pointer" }}>
+          はじめる 💚
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   const toastEl = toast ? (
     <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
       {toast}
@@ -465,29 +488,6 @@ export default function App() {
     );
   }
 
-  const tutorialEl = showTutorial ? (
-    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center" }}>
-      <div style={{ background:"#fff",borderRadius:24,padding:"32px 28px",maxWidth:320,margin:"0 16px",textAlign:"center",boxShadow:"0 16px 48px rgba(0,0,0,0.2)" }}>
-        <div style={{ fontSize:52,marginBottom:12 }}>🌿</div>
-        <h2 style={{ fontSize:18,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>AtopiMatchへようこそ</h2>
-        <p style={{ fontSize:14,color:"#6b8f71",lineHeight:1.8,marginBottom:20 }}>
-          このアプリは、<br/>
-          <strong>「共感 → マッチ → チャット」</strong>でつながります。<br/><br/>
-          <span style={{ fontSize:13 }}>
-            ① 気になる人に「共感」する<br/>
-            ② お互いに共感すると「マッチ」<br/>
-            ③ マッチすると「チャット」ができます
-          </span><br/><br/>
-          まずは気になる人に共感してみましょう🌿
-        </p>
-        <button onClick={() => { setShowTutorial(false); localStorage.setItem('tutorial_shown','1'); }}
-          style={{ width:"100%",background:"#52a875",color:"#fff",border:"none",borderRadius:14,padding:"14px 0",fontSize:15,fontWeight:700,cursor:"pointer" }}>
-          はじめる 💚
-        </button>
-      </div>
-    </div>
-  ) : null;
-
 
   if (screen === "chat" && (!chatTarget || !currentUser || !myProfile)) { setScreen("matches"); return null; }
   if (screen === "chat") return (
@@ -522,6 +522,7 @@ export default function App() {
 
   if (screen === "auth") return (
     <div style={S.app}>
+      {tutorialEl}
       <div style={{ width:"100%",maxWidth:400,padding:"48px 20px" }}>
         <div style={{ textAlign:"center",marginBottom:28 }}>
           <div style={{ fontSize:52 }}>🌿</div>
