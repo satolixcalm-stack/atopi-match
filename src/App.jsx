@@ -372,11 +372,13 @@ export default function App() {
     ? allProfiles.map(p => ({ ...p, ...calcScore(myProfile, p) })).sort((a, b) => b.score - a.score)
     : allProfiles;
 
-  const filteredProfiles = sortedProfiles.filter(p => {
-    if (matches[p.uid]) return false;
-    if (filterMode === "liked") return !!myLikes[p.uid];
-    return true;
-  });
+  const filteredProfiles = sortedProfiles
+    .filter(p => {
+      if (matches[p.uid]) return false;
+      if (filterMode === "liked") return !!myLikes[p.uid];
+      return true;
+    })
+    .sort((a, b) => (myLikes[b.uid] ? 1 : 0) - (myLikes[a.uid] ? 1 : 0));
 
   const toastEl = toast ? (
     <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
@@ -594,15 +596,24 @@ export default function App() {
               すべて
             </button>
             <button onClick={() => setFilterMode("liked")}
-              style={{ background:filterMode==="liked"?"#52a875":"#f0f0f0",color:filterMode==="liked"?"#fff":"#666",border:filterMode==="liked"?"none":"1px solid #ccc",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
+              style={{ background:filterMode==="liked"?"#52a875":"#f0f0f0",color:filterMode==="liked"?"#fff":"#666",border:filterMode==="liked"?"2px solid #2e7d32":"1px solid #ccc",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:800,cursor:"pointer" }}>
               共感済み
             </button>
           </div>
           {filteredProfiles.length === 0 ? (
             <div style={S.empty}>
               <div style={{ fontSize:52 }}>🌿</div>
-              <h3 style={{ color:"#3d6b4f",marginTop:12 }}>まだユーザーがいません</h3>
-              <p style={{ color:"#6b8f71",fontSize:13 }}>友達を招待してみましょう</p>
+              {filterMode === "liked" ? (
+                <>
+                  <h3 style={{ color:"#3d6b4f",marginTop:12 }}>共感したユーザーはいません</h3>
+                  <p style={{ color:"#6b8f71",fontSize:13 }}>気になる人に共感してみましょう</p>
+                </>
+              ) : (
+                <>
+                  <h3 style={{ color:"#3d6b4f",marginTop:12 }}>表示できるユーザーがいません</h3>
+                  <p style={{ color:"#6b8f71",fontSize:13 }}>すでに全員とマッチ済かもしれません</p>
+                </>
+              )}
             </div>
           ) : filteredProfiles.map(p => {
             const isExpanded = expandedUid === p.uid;
