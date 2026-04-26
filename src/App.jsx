@@ -471,8 +471,14 @@ export default function App() {
         <div style={{ fontSize:52,marginBottom:12 }}>🌿</div>
         <h2 style={{ fontSize:18,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>AtopiMatchへようこそ</h2>
         <p style={{ fontSize:14,color:"#6b8f71",lineHeight:1.8,marginBottom:20 }}>
-          このアプリは、アトピーという同じ経験を持つ人と<strong>共感し、つながる</strong>場所です。<br/><br/>
-          症状・悪化因子・治療法が似ている人と出会えます。
+          このアプリは、<br/>
+          <strong>「共感 → マッチ → チャット」</strong>でつながります。<br/><br/>
+          <span style={{ fontSize:13 }}>
+            ① 気になる人に「共感」する<br/>
+            ② お互いに共感すると「マッチ」<br/>
+            ③ マッチすると「チャット」ができます
+          </span><br/><br/>
+          まずは気になる人に共感してみましょう🌿
         </p>
         <button onClick={() => { setShowTutorial(false); localStorage.setItem('tutorial_shown','1'); }}
           style={{ width:"100%",background:"#52a875",color:"#fff",border:"none",borderRadius:14,padding:"14px 0",fontSize:15,fontWeight:700,cursor:"pointer" }}>
@@ -533,6 +539,10 @@ export default function App() {
           <input style={{ ...S.input,marginBottom:12 }} type="password" placeholder="••••••••" value={authPassword} onChange={e => setAuthPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && handleAuth()} />
           {authError && <div style={S.errorMsg}>{authError}</div>}
           <button style={S.btn} onClick={handleAuth} disabled={authLoading}>{authLoading?"処理中...":authMode==="login"?"ログイン":"アカウントを作成"}</button>
+          <button onClick={() => setShowTutorial(true)}
+            style={{ width:"100%",marginTop:10,background:"transparent",border:"none",color:"#52a875",fontSize:13,cursor:"pointer" }}>
+            使い方を見る 🌿
+          </button>
         </div>
       </div>
     </div>
