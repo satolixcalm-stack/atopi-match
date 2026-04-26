@@ -719,7 +719,7 @@ export default function App() {
                       <div style={{ fontSize:36,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",background:"#f0f7f2",borderRadius:"50%",flexShrink:0 }}>{m.avatar}</div>
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
-                        <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location} · {m.severity}</div>
+                        <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location}{m.gender?" · "+m.gender:""} · {m.severity}</div>
                         {mCommons.length > 0 && (
                           <div style={{ fontSize:11,color:"#52a875",marginTop:2,fontWeight:700 }}>
                             🌿 共通点：{mCommons.slice(0,2).join("・")}{mCommons.length > 2 ? ` +${mCommons.length - 2}` : ""}
