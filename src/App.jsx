@@ -88,7 +88,7 @@ export default function App() {
           loadMyTimeline(user.uid);
           loadMyLikes(user.uid);
           loadNotifications(user.uid);
-          if (!localStorage.getItem('tutorial_shown')) setShowTutorial(true);
+          if (!localStorage.getItem('seenTutorial')) setShowTutorial(true);
           setScreen("browse");
         } else {
           setScreen("register");
@@ -395,7 +395,7 @@ export default function App() {
           </span><br/><br/>
           まずは気になる人に共感してみましょう🌿
         </p>
-        <button onClick={() => { setShowTutorial(false); localStorage.setItem('tutorial_shown','1'); }}
+        <button onClick={() => { setShowTutorial(false); localStorage.setItem('seenTutorial','1'); }}
           style={{ width:"100%",background:"#52a875",color:"#fff",border:"none",borderRadius:14,padding:"14px 0",fontSize:15,fontWeight:700,cursor:"pointer" }}>
           はじめる 💚
         </button>
@@ -598,7 +598,7 @@ export default function App() {
   if (screen === "browse") return (
     <div style={S.app}>
       <div style={S.page}>
-        <div style={S.bar}><span style={S.barTitle}>🌿 自分と似ている人</span><button style={S.ghost} onClick={() => signOut(auth)}>退出</button></div>
+        <div style={S.bar}><span style={S.barTitle}>🌿 自分と似ている人</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
         <div style={{ flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:12 }}>
           {/* フィルターUI */}
           <div style={{ display:"flex",gap:8,marginBottom:4 }}>
@@ -708,7 +708,7 @@ export default function App() {
   if (screen === "matches") return (
     <div style={S.app}>
       <div style={S.page}>
-        <div style={S.bar}><span style={S.barTitle}>💚 マッチ一覧</span></div>
+        <div style={S.bar}><span style={S.barTitle}>💚 マッチ一覧</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
         <div style={{ flex:1,overflowY:"auto",padding:16 }}>
           {Object.keys(matches).length === 0 ? (
             <div style={S.empty}>
