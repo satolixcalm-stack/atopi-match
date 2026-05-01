@@ -254,39 +254,65 @@ export default function App() {
   //   ・絵文字を選択した       → avatarUrl を "" にして絵文字だけで表示
   // ──────────────────────────────────────────────────────────
   const submitProfile = async () => {
-    if (!profileForm.name || !profileForm.severity) return;
-    if (profileForm.age && Number(profileForm.age) < 18) {
-      alert("18歳以上の方のみご利用いただけます");
+  // 必須チェック
+  if (!profileForm.name || !profileForm.severity) {
+    alert("ニックネームと症状の重さは必須です");
+    return;
+  }
+
+  // 年齢チェック（任意入力）
+  const ageStr = profileForm.age;
+  const ageNum = Number(ageStr);
+
+  if (ageStr) {
+    // 数字チェック（念のため）
+    if (!/^\d+$/.test(ageStr)) {
+      alert("年齢は数字で入力してください");
       return;
     }
 
-    // 新しい画像ファイルが選択されていればアップロード
-    let avatarUrl = profileForm.avatarUrl || "";
-    if (avatarFile) {
-      try {
-        avatarUrl = await uploadAvatar(currentUser.uid, avatarFile);
-      } catch (e) {
-        alert(e.message);
-        return;
-      }
+    // 範囲チェック
+    if (ageNum < 18 || ageNum > 100) {
+      alert("年齢は18〜100歳で入力してください");
+      return;
     }
+  }
 
-    const profile = {
-      ...profileForm,
-      uid: currentUser.uid,
-      createdAt: profileForm.createdAt || Date.now(),
-      avatarUrl, // 画像あり→URL、絵文字選択→""
-    };
+  // ── アバター画像処理（既存ロジック）
+  let avatarUrl = profileForm.avatarUrl || "";
 
-    await set(ref(db, "users/" + currentUser.uid), profile);
-    setMyProfile(profile);
-    setAvatarFile(null);
-    setAvatarPreview(null);
-    loadAllProfiles(currentUser.uid);
-    loadMatches(currentUser.uid);
-    loadMyTimeline(currentUser.uid);
-    setScreen("browse");
+  if (avatarFile) {
+    try {
+      avatarUrl = await uploadAvatar(currentUser.uid, avatarFile);
+    } catch (e) {
+      alert(e.message);
+      return;
+    }
+  }
+
+  // プロフィール作成
+  const profile = {
+    ...profileForm,
+    uid: currentUser.uid,
+    createdAt: Date.now(),
+    avatarUrl
   };
+
+  await set(ref(db, "users/" + currentUser.uid), profile);
+
+  // state更新
+  setMyProfile(profile);
+  setAvatarFile(null);
+  setAvatarPreview(null);
+
+  // 初期データ読み込み
+  loadAllProfiles(currentUser.uid);
+  loadMatches(currentUser.uid);
+  loadMyTimeline(currentUser.uid);
+
+  // 画面遷移
+  setScreen("browse");
+};
 
   // ──────────────────────────────────────────────────────────
   // 「絵文字に戻す」：DB の avatarUrl を "" にするだけ
