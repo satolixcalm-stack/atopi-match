@@ -254,18 +254,18 @@ export default function App() {
   //   ・絵文字を選択した       → avatarUrl を "" にして絵文字だけで表示
   // ──────────────────────────────────────────────────────────
   const submitProfile = async () => {
-  // 必須チェック
+  // ── 必須チェック
   if (!profileForm.name || !profileForm.severity) {
     alert("ニックネームと症状の重さは必須です");
     return;
   }
 
-  // 年齢チェック（任意入力）
-  const ageStr = profileForm.age;
+  // ── 年齢チェック（任意入力）
+  const ageStr = profileForm.age; // ← 必ず文字列で管理
   const ageNum = Number(ageStr);
 
   if (ageStr) {
-    // 数字チェック（念のため）
+    // 数字チェック
     if (!/^\d+$/.test(ageStr)) {
       alert("年齢は数字で入力してください");
       return;
@@ -278,7 +278,7 @@ export default function App() {
     }
   }
 
-  // ── アバター画像処理（既存ロジック）
+  // ── アバター画像処理
   let avatarUrl = profileForm.avatarUrl || "";
 
   if (avatarFile) {
@@ -290,28 +290,36 @@ export default function App() {
     }
   }
 
-  // プロフィール作成
+  // ── プロフィールデータ作成
   const profile = {
     ...profileForm,
+    age: ageStr, // ← 文字列のまま保存でOK
     uid: currentUser.uid,
     createdAt: Date.now(),
     avatarUrl
   };
 
-  await set(ref(db, "users/" + currentUser.uid), profile);
+  try {
+    // ── DB保存
+    await set(ref(db, "users/" + currentUser.uid), profile);
 
-  // state更新
-  setMyProfile(profile);
-  setAvatarFile(null);
-  setAvatarPreview(null);
+    // ── state更新
+    setMyProfile(profile);
+    setAvatarFile(null);
+    setAvatarPreview(null);
 
-  // 初期データ読み込み
-  loadAllProfiles(currentUser.uid);
-  loadMatches(currentUser.uid);
-  loadMyTimeline(currentUser.uid);
+    // ── データ再取得
+    loadAllProfiles(currentUser.uid);
+    loadMatches(currentUser.uid);
+    loadMyTimeline(currentUser.uid);
 
-  // 画面遷移
-  setScreen("browse");
+    // ── 画面遷移
+    setScreen("browse");
+
+  } catch (e) {
+    alert("プロフィール登録に失敗しました");
+    console.error(e);
+  }
 };
 
   // ──────────────────────────────────────────────────────────
