@@ -138,7 +138,7 @@ export default function App() {
           loadMatches(user.uid);
           loadMyTimeline(user.uid);
           loadMyLikes(user.uid);
-          loadNotifications(user.uid);
+      
           if (!localStorage.getItem('seenTutorial')) setShowTutorial(true);
           setScreen("browse");
         } else {
@@ -155,7 +155,31 @@ export default function App() {
       }
     });
   }, []);
+useEffect(() => {
+  if (!currentUser?.uid) return;
 
+  const notifRef = ref(db, "notifications/" + currentUser.uid);
+
+  const unsubscribe = onValue(notifRef, (snap) => {
+    if (!snap.exists()) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    const list = [];
+    snap.forEach(c => list.push({ id: c.key, ...c.val() }));
+
+    list.sort((a, b) => b.createdAt - a.createdAt);
+
+    console.log("通知件数:", list.length);
+
+    setNotifications(list);
+    setUnreadCount(list.filter(n => !n.read).length);
+  });
+
+  return () => unsubscribe(); // ←これ超重要
+}, [currentUser?.uid]);
   const loadAllProfiles = async (myUid) => {
     const snap = await get(ref(db, "users"));
     if (!snap.exists()) return;
@@ -440,17 +464,7 @@ export default function App() {
     setTimeout(() => setToast(null), duration);
   };
 
-  const loadNotifications = (uid) => {
-    onValue(ref(db, "notifications/" + uid), (snap) => {
-      if (!snap.exists()) { setNotifications([]); setUnreadCount(0); return; }
-      const list = [];
-      snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-      list.sort((a, b) => b.createdAt - a.createdAt);
-      console.log("通知件数:", list.length, list);
-      setNotifications(list);
-      setUnreadCount(list.filter(n => !n.read).length);
-    });
-  };
+
 
   const loadUnreadChats = (matchesData) => {
     if (!currentUser) return;
