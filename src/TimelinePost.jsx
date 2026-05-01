@@ -178,15 +178,7 @@ const formatDate = (ts) => {
 
   return new Date(ts).toLocaleDateString();
 };
-  const formatDate = (ts) => {
-  const diff = Date.now() - ts;
-
-  if (diff < 60000) return "たった今";
-  if (diff < 3600000) return Math.floor(diff / 60000) + "分前";
-  if (diff < 86400000) return Math.floor(diff / 3600000) + "時間前";
-
-  return new Date(ts).toLocaleDateString();
-};
+  
   return (
     <div
       ref={postRef}
