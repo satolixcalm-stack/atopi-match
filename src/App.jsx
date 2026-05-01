@@ -135,7 +135,7 @@ export default function App() {
       const list = [];
       snap.forEach(c => {
         const val = c.val();
-        if (val && val.text) list.push({ id: c.key, ...val });
+        if (val && (val.text || val.imageUrl)) list.push({ id: c.key, ...val });
       });
       setMyTimeline(list.slice().reverse());
     });
@@ -147,7 +147,7 @@ export default function App() {
     const list = [];
     if (snap.exists()) snap.forEach(c => {
       const val = c.val();
-      if (val && val.text) list.push({ id: c.key, ...val });
+      if (val && (val.text || val.imageUrl)) list.push({ id: c.key, ...val });
     });
     setProfileTimelines(prev => ({ ...prev, [uid]: list.slice().reverse() }));
   };
@@ -224,16 +224,13 @@ export default function App() {
         const fileRef = storageRef(storage, imagePath);
         await uploadBytes(fileRef, imageFile);
         imageUrl = await getDownloadURL(fileRef);
-        console.log("✅ 画像アップロード成功:", imageUrl);
       }
       const postData = { text: timelineInput.trim(), createdAt: Date.now() };
       if (imageUrl) {
         postData.imageUrl = imageUrl;
         postData.imagePath = imagePath;
       }
-      console.log("📝 保存するpostData:", postData);
       await push(ref(db, "timeline/" + currentUser.uid), postData);
-      console.log("✅ DB保存完了");
       setTimelineInput("");
       setImageFile(null);
       setImagePreview(null);
