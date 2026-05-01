@@ -972,7 +972,9 @@ if (n.postId) {
   );
 
   // ── mypage ───────────────────────────────────────────────
-  if (screen === "mypage") return (
+  if (screen === "mypage") 
+    console.log("map前", notifications.length);
+    return (
     <div style={S.app}><div style={S.page}>
       <div style={S.bar}><span style={S.barTitle}>👤 マイページ</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
       <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
@@ -989,7 +991,7 @@ if (n.postId) {
           <div style={S.card}>
             <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
             <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-              console.log("map前", notifications.length);
+              
               {notifications.slice(0, visibleCount).map(n => (
                 <button key={n.id} onClick={() => handleNotificationClick(n)}
                   style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:n.read?"#f0f7f2":"#e8f5e9",borderRadius:12,border:n.read?"none":"1.5px solid #c8e6c9",cursor:"pointer",width:"100%",textAlign:"left" }}>
