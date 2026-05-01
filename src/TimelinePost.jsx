@@ -182,11 +182,29 @@ function TimelinePostInner({
         : null
     }
   );
+    
 if (ownerUid !== currentUser.uid) {
   const notifRef = push(ref(db, "notifications/" + ownerUid));
 
   await set(notifRef, {
     type: "comment",
+    fromUserId: currentUser.uid,
+    fromUserName: user.name,
+    fromUserAvatar: user.avatar,
+    fromUserAvatarUrl: user.avatarUrl,
+    postId: post.id,
+    ownerUid: ownerUid,
+    createdAt: Date.now(),
+    read: false
+  });
+}
+
+// 👇さらにその下に追加
+if (replyTarget && replyTarget.userId !== currentUser.uid) {
+  const replyNotifRef = push(ref(db, "notifications/" + replyTarget.userId));
+
+  await set(replyNotifRef, {
+    type: "reply",
     fromUserId: currentUser.uid,
     fromUserName: user.name,
     fromUserAvatar: user.avatar,
