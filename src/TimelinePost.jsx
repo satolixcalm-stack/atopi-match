@@ -206,6 +206,9 @@ if (replyTarget && replyTarget.userId !== currentUser.uid) {
 
   await set(replyNotifRef, {
     type: "reply",
+    ...
+  });
+}
     fromUserId: currentUser.uid,
     fromUserName: user.name,
     fromUserAvatar: user.avatar,
