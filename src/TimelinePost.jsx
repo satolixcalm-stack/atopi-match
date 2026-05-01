@@ -243,9 +243,22 @@ const formatDate = (ts) => {
 </div>
       {/* いいね */}
       <div style={{ marginTop: 8 }}>
-        <button onClick={toggleLike}>
-          ❤️ {likeCount}
-        </button>
+       <button
+  onClick={toggleLike}
+  style={{
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    fontSize: 16,
+    padding: 4,
+    color: isLiked ? "#e53935" : "#999",
+    transition: "transform 0.1s"
+  }}
+  onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.9)")}
+  onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+>
+  ❤️ {likeCount}
+</button>
       </div>
 
       {/* いいねユーザー表示（修正済み） */}
