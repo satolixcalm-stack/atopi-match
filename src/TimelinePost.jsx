@@ -232,6 +232,23 @@ comments.forEach(c => {
     position: "relative" // ←ここ追加
   }}
 >
+    {canDelete && (
+  <button
+    onClick={onDelete}
+    style={{
+      position: "absolute",
+      top: 6,
+      right: 6,
+      background: "transparent",
+      border: "none",
+      color: "#e53935",
+      fontSize: 18,
+      cursor: "pointer"
+    }}
+  >
+    ×
+  </button>
+)}
       {/* 🔥 投稿者表示 */}
       {ownerUser && (
         <div
