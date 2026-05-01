@@ -168,7 +168,16 @@ function TimelinePostInner({
   const isLiked = !!likes[currentUser.uid];
   const likeCount = Object.keys(likes).length;
   const displayUsers = likeUsers.slice(0, 3);
+  // 🔥 日付フォーマット
+const formatDate = (ts) => {
+  const diff = Date.now() - ts;
 
+  if (diff < 60000) return "たった今";
+  if (diff < 3600000) return Math.floor(diff / 60000) + "分前";
+  if (diff < 86400000) return Math.floor(diff / 3600000) + "時間前";
+
+  return new Date(ts).toLocaleDateString();
+};
   return (
     <div
       ref={postRef}
@@ -198,7 +207,9 @@ function TimelinePostInner({
 
       {/* 投稿内容 */}
       <div style={{ fontSize: 14 }}>{post.text}</div>
-
+<div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
+  {formatDate(post.createdAt)}
+</div>
       {post.imageUrl && (
         <img
           src={post.imageUrl}
