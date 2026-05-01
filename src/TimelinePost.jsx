@@ -196,7 +196,6 @@ function TimelinePostInner({
         />
       )}
 <div style={{ position: "relative" }}>
-  
   {canDelete && (
     <button
       onClick={onDelete}
@@ -213,8 +212,10 @@ function TimelinePostInner({
     >
       ×
     </button>
-  </div>
-)}
+  )}
+
+  {/* ここに投稿内容 */}
+</div>
       {/* いいね */}
       <div style={{ marginTop: 8 }}>
         <button onClick={toggleLike}>
