@@ -356,19 +356,19 @@ comments.forEach(c => {
             <div style={{ fontSize: 10, color: "#888" }}>
               {parent.createdAt && formatDate(parent.createdAt)}
             </div>
-          <button
+       <button
   onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
-  disabled={c.userId === currentUser.uid}
+  disabled={parent.userId === currentUser.uid}
   style={{
     background: "transparent",
     border: "none",
-    cursor: c.userId === currentUser.uid ? "default" : "pointer",
+    cursor: parent.userId === currentUser.uid ? "default" : "pointer",
     fontSize: 12,
-    color: c.likes?.[currentUser.uid] ? "#e53935" : "#999",
-    opacity: c.userId === currentUser.uid ? 0.4 : 1
+    color: parent.likes?.[currentUser.uid] ? "#e53935" : "#999",
+    opacity: parent.userId === currentUser.uid ? 0.4 : 1
   }}
 >
-  ❤️ {c.likes ? Object.keys(c.likes).length : 0}
+  ❤️ {parent.likes ? Object.keys(parent.likes).length : 0}
 </button>
           </div>
         </div>
@@ -440,17 +440,17 @@ comments.forEach(c => {
                   {/* 👇ここ追加 */}
 <button
   onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
-  disabled={c.userId === currentUser.uid}
+  disabled={reply.userId === currentUser.uid}
   style={{
     background: "transparent",
     border: "none",
-    cursor: c.userId === currentUser.uid ? "default" : "pointer",
+    cursor: reply.userId === currentUser.uid ? "default" : "pointer",
     fontSize: 12,
-    color: c.likes?.[currentUser.uid] ? "#e53935" : "#999",
-    opacity: c.userId === currentUser.uid ? 0.4 : 1
+    color: reply.likes?.[currentUser.uid] ? "#e53935" : "#999",
+    opacity: reply.userId === currentUser.uid ? 0.4 : 1
   }}
 >
-  ❤️ {c.likes ? Object.keys(c.likes).length : 0}
+  ❤️ {reply.likes ? Object.keys(reply.likes).length : 0}
 </button>
                 </div>
               </div>
