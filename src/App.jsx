@@ -990,7 +990,7 @@ if (n.postId) {
   if (screen === "mypage")  return (
     <div style={S.app}><div style={S.page}>
       <div style={S.bar}><span style={S.barTitle}>👤 マイページ</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
-      <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:8, maxHeight: 320, overflowY: "auto" }}>
 
         {/* 通知 */}
         {notifications.length === 0 && (
