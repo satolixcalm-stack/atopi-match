@@ -242,38 +242,40 @@ const formatDate = (ts) => {
   {/* ここに投稿内容 */}
 </div>
       {/* いいね */}
-      <div style={{ marginTop: 8 }}>
-       <button
-  onClick={toggleLike}
-  style={{
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    fontSize: 16,
-    padding: 4,
-    color: isLiked ? "#e53935" : "#999",
-    transition: "transform 0.1s"
-  }}
-  onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.9)")}
-  onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
->
-  ❤️ {likeCount}
-</button>
-      </div>
+     <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+  
+  {/* いいねボタン */}
+  <button
+    onClick={toggleLike}
+    style={{
+      background: "transparent",
+      border: "none",
+      cursor: "pointer",
+      fontSize: 16,
+      padding: 4,
+      color: isLiked ? "#e53935" : "#999",
+      transition: "transform 0.1s"
+    }}
+    onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.9)")}
+    onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+  >
+    ❤️ {likeCount}
+  </button>
 
-      {/* いいねユーザー表示（修正済み） */}
-      <div style={{ marginTop: 6 }}>
-        {displayUsers.map((u) => (
-          <span
-            key={u.uid}
-            style={{ marginRight: 6, cursor: "pointer" }}
-            onClick={() => onClickUser(u.uid)}
-          >
-            <Avatar avatarUrl={u.avatarUrl} avatar={u.avatar} size={20} />{" "}
-            {u.name}
-          </span>
-        ))}
+  {/* いいねしたユーザー（アバターだけ） */}
+  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+    {displayUsers.map((u) => (
+      <div
+        key={u.uid}
+        style={{ cursor: "pointer" }}
+        onClick={() => onClickUser(u.uid)}
+      >
+        <Avatar avatarUrl={u.avatarUrl} avatar={u.avatar} size={20} />
       </div>
+    ))}
+  </div>
+
+</div>
 
       {/* コメント */}
     {/* コメント */}
