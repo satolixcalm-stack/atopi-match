@@ -195,7 +195,25 @@ function TimelinePostInner({
           }}
         />
       )}
-
+{canDelete && (
+  <div style={{ marginTop: 8 }}>
+    <button
+      onClick={onDelete}
+      style={{
+        background: "#ffebee",
+        color: "#e57373",
+        border: "1px solid #f48fb1",
+        borderRadius: 10,
+        padding: "6px 12px",
+        fontSize: 12,
+        fontWeight: 700,
+        cursor: "pointer"
+      }}
+    >
+      🗑 削除
+    </button>
+  </div>
+)}
       {/* いいね */}
       <div style={{ marginTop: 8 }}>
         <button onClick={toggleLike}>
