@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { db, auth, storage } from "./firebase.js";
 import { ref, set, get, onValue, push, remove } from "firebase/database";
@@ -225,13 +224,16 @@ export default function App() {
         const fileRef = storageRef(storage, imagePath);
         await uploadBytes(fileRef, imageFile);
         imageUrl = await getDownloadURL(fileRef);
+        console.log("✅ 画像アップロード成功:", imageUrl);
       }
       const postData = { text: timelineInput.trim(), createdAt: Date.now() };
       if (imageUrl) {
         postData.imageUrl = imageUrl;
         postData.imagePath = imagePath;
       }
+      console.log("📝 保存するpostData:", postData);
       await push(ref(db, "timeline/" + currentUser.uid), postData);
+      console.log("✅ DB保存完了");
       setTimelineInput("");
       setImageFile(null);
       setImagePreview(null);
