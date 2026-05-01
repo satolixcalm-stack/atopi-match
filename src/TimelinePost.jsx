@@ -44,23 +44,22 @@ function TimelinePostInner({
   const isOwner = currentUser.uid === ownerUid;
 
   // ── 投稿者情報取得（🔥追加）
-  useEffect(() => {
+ useEffect(() => {
   if (!isHighlighted) return;
 
-  // 🔥 即スクロール
-  if (postRef.current) {
-    postRef.current.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
-  }
+  // requestAnimationFrame でDOM確定後に実行（即時・遅延なし）
+  const raf = requestAnimationFrame(() => {
+    if (postRef.current) {
+      postRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
 
-  // ハイライト解除
   const clearTimer = setTimeout(() => {
     if (clearHighlight) clearHighlight();
   }, 3000);
 
   return () => {
+    cancelAnimationFrame(raf);
     clearTimeout(clearTimer);
   };
 }, [isHighlighted]);
