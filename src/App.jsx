@@ -113,6 +113,9 @@ export default function App() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+  console.log("🔥 notifications更新", notifications);
+}, [notifications]);
   const [visibleCount, setVisibleCount] = useState(5);
   const [filterMode, setFilterMode] = useState("all");
   const [unreadChats, setUnreadChats] = useState({});
