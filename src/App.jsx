@@ -338,35 +338,56 @@ export default function App() {
   };
 
   const postTimeline = async () => {
-    if (!timelineInput.trim() && !imageFile) return;
-    if (timelineLoading) return;
-    setTimelineLoading(true);
-    try {
-      let imageUrl = null;
-      let imagePath = null;
-      const postId = Date.now().toString();
-      if (imageFile) {
-        if (imageFile.size > 3 * 1024 * 1024) {
-          alert("画像は3MB以下にしてください");
-          setTimelineLoading(false);
-          return;
-        }
-        const fileName = Date.now() + "_" + imageFile.name;
-        imagePath = "timelineImages/" + currentUser.uid + "/" + postId + "/" + fileName;
-        const fileRef = storageRef(storage, imagePath);
-        await uploadBytes(fileRef, imageFile);
-        imageUrl = await getDownloadURL(fileRef);
+  if (!timelineInput.trim() && !imageFile) return;
+  if (timelineLoading) return;
+
+  setTimelineLoading(true);
+
+  try {
+    let imageUrl = null;
+    let imagePath = null;
+
+    // 🔥 ここが最重要（pushのIDを先に取得）
+    const newRef = push(ref(db, "timeline/" + currentUser.uid));
+    const postId = newRef.key;
+
+    if (imageFile) {
+      if (imageFile.size > 3 * 1024 * 1024) {
+        alert("画像は3MB以下にしてください");
+        setTimelineLoading(false);
+        return;
       }
-      const postData = { text: timelineInput.trim(), createdAt: Date.now() };
-      if (imageUrl) { postData.imageUrl = imageUrl; postData.imagePath = imagePath; }
-      await push(ref(db, "timeline/" + currentUser.uid), postData);
-      setTimelineInput("");
-      setImageFile(null);
-      setImagePreview(null);
-    } catch (e) {
-      alert("投稿に失敗しました: " + e.message);
-    } finally { setTimelineLoading(false); }
-  };
+
+      const fileName = Date.now() + "_" + imageFile.name;
+
+      // 🔥 postIdを使う
+      imagePath = "timelineImages/" + currentUser.uid + "/" + postId + "/" + fileName;
+
+      const fileRef = storageRef(storage, imagePath);
+      await uploadBytes(fileRef, imageFile);
+      imageUrl = await getDownloadURL(fileRef);
+    }
+
+    const postData = {
+      text: timelineInput.trim(),
+      createdAt: Date.now(),
+      imageUrl: imageUrl || null,
+      imagePath: imagePath || null
+    };
+
+    // 🔥 pushじゃなくて set
+    await set(newRef, postData);
+
+    setTimelineInput("");
+    setImageFile(null);
+    setImagePreview(null);
+
+  } catch (e) {
+    alert("投稿に失敗しました: " + e.message);
+  } finally {
+    setTimelineLoading(false);
+  }
+};
 
   const deleteTimeline = async (id, imagePath) => {
     if (!window.confirm("この投稿を削除しますか？")) return;
