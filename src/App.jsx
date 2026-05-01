@@ -986,9 +986,7 @@ if (n.postId) {
   );
 
   // ── mypage ───────────────────────────────────────────────
-  if (screen === "mypage") 
-    console.log("map前", notifications.length);
-    return (
+  if (screen === "mypage")  return (
     <div style={S.app}><div style={S.page}>
       <div style={S.bar}><span style={S.barTitle}>👤 マイページ</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
       <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
