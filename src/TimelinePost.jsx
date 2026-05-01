@@ -347,13 +347,13 @@ comments.forEach(c => {
               <b>{parent.userName}</b>：{parent.text}
             </div>
 
-           <div
+         <div
   style={{
     fontSize: 10,
     color: "#888",
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
+    alignItems: "center",
+    gap: 6   // ←これが重要
   }}
 >
   <span>{parent.createdAt && formatDate(parent.createdAt)}</span>
@@ -442,8 +442,8 @@ comments.forEach(c => {
     fontSize: 10,
     color: "#888",
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
+    alignItems: "center",
+    gap: 6
   }}
 >
   <span>{reply.createdAt && formatDate(reply.createdAt)}</span>
