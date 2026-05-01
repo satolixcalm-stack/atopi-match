@@ -184,11 +184,11 @@ console.log("コメント送信", replyTarget);
     }
   );
     
-if (ownerUid !== currentUser.uid) {
-  const notifRef = push(ref(db, "notifications/" + ownerUid));
+if (replyTarget && replyTarget.userId !== currentUser.uid) {
+  const replyNotifRef = push(ref(db, "notifications/" + replyTarget.userId));
 
-  await set(notifRef, {
-    type: "comment",
+  await set(replyNotifRef, {
+    type: "reply",
     fromUserId: currentUser.uid,
     fromUserName: user.name,
     fromUserAvatar: user.avatar,
