@@ -981,7 +981,7 @@ if (n.postId) {
           <div style={{ ...S.card,textAlign:"center",padding:"20px 24px" }}>
             <div style={{ fontSize:32,marginBottom:8 }}>🔔</div>
             <p style={{ color:"#6b8f71",fontSize:13,fontWeight:700 }}>まだ通知はありません</p>
-            <p style={{ color:"#a8c5b0",fontSize:12,marginTop:4 }}>いいねやコメントが届くとここに表示されます</p>
+            <p style={{ color:"#a8c5b0",fontSize:12,marginTop:4 }}>共感やコメントが届くとここに表示されます</p>
           </div>
         )}
         {notifications.length > 0 && (
