@@ -20,13 +20,28 @@ const AVATARS = [
 ];
 const PAGE_SIZE = 3;
 
+// ──────────────────────────────────────────────────────────
+// AvatarImg コンポーネント（画像・絵文字 両対応）
+//
+// 表示の優先順位：
+//   1. avatarUrl（画像URL）が有効な文字列 → 丸い写真
+//   2. emoji（絵文字）がある              → 丸い枠に絵文字
+//   3. どちらもない                       → デフォルト絵文字 🌿
+//
+// 使い方：
+//   <AvatarImg avatarUrl={p.avatarUrl} emoji={p.avatar} size={50} />
+// ──────────────────────────────────────────────────────────
 function AvatarImg({ avatarUrl, emoji, size = 48 }) {
+  // avatarUrl が空文字・null・undefined でなければ画像を表示
   if (avatarUrl) {
     return (
       <img
         src={avatarUrl}
         alt="avatar"
-        onError={e => { e.target.style.display = "none"; }}
+        onError={e => {
+          // 画像の読み込みに失敗したら非表示にして絵文字を見せる
+          e.target.style.display = "none";
+        }}
         style={{
           width: size, height: size, borderRadius: "50%",
           objectFit: "cover", border: "2px solid #c8e6c9",
@@ -35,6 +50,7 @@ function AvatarImg({ avatarUrl, emoji, size = 48 }) {
       />
     );
   }
+  // 画像がない場合は絵文字を丸枠で表示
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%",
@@ -70,7 +86,6 @@ export default function App() {
   const [verificationSent, setVerificationSent] = useState(false);
   const unverifiedRef = { current: false };
 
-  // ⚠️ 修正①: `c` → `currentUser` に統一（c のままだと各所で currentUser 参照がエラーになる）
   const [currentUser, setCurrentUser] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({
@@ -98,15 +113,18 @@ export default function App() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+  console.log("🔥 notifications更新", notifications);
+}, [notifications]);
   const [visibleCount, setVisibleCount] = useState(5);
   const [filterMode, setFilterMode] = useState("all");
   const [unreadChats, setUnreadChats] = useState({});
 
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [avatarSaving, setAvatarSaving] = useState(false);
+  // ── アバター用 state
+  const [avatarFile, setAvatarFile] = useState(null);       // 選択中の画像ファイル
+  const [avatarPreview, setAvatarPreview] = useState(null); // プレビュー用 ObjectURL
+  const [avatarSaving, setAvatarSaving] = useState(false);  // 保存中フラグ
 
-  // ── Auth 監視
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -123,6 +141,7 @@ export default function App() {
           loadMatches(user.uid);
           loadMyTimeline(user.uid);
           loadMyLikes(user.uid);
+      
           if (!localStorage.getItem('seenTutorial')) setShowTutorial(true);
           setScreen("browse");
         } else {
@@ -139,29 +158,31 @@ export default function App() {
       }
     });
   }, []);
+useEffect(() => {
+  if (!currentUser?.uid) return;
 
-  // ⚠️ 修正②: 壊れていた通知useEffectを正しく書き直す
-  // （元コードは push/set/await が混入した構文エラー状態だった）
-  useEffect(() => {
-    if (!currentUser?.uid) return;
+  const notifRef = ref(db, "notifications/" + currentUser.uid);
 
-    const notifRef = ref(db, "notifications/" + currentUser.uid);
-    const unsubscribe = onValue(notifRef, (snap) => {
-      if (!snap.exists()) {
-        setNotifications([]);
-        setUnreadCount(0);
-        return;
-      }
-      const list = [];
-      snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-      list.sort((a, b) => b.createdAt - a.createdAt);
-      setNotifications(list);
-      setUnreadCount(list.filter(n => !n.read).length);
-    });
+  const unsubscribe = onValue(notifRef, (snap) => {
+    if (!snap.exists()) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
 
-    return () => unsubscribe();
-  }, [currentUser?.uid]);
+    const list = [];
+    snap.forEach(c => list.push({ id: c.key, ...c.val() }));
 
+    list.sort((a, b) => b.createdAt - a.createdAt);
+
+    console.log("通知件数:", list.length);
+
+    setNotifications(list);
+    setUnreadCount(list.filter(n => !n.read).length);
+  });
+
+  return () => unsubscribe(); // ←これ超重要
+}, [currentUser?.uid]);
   const loadAllProfiles = async (myUid) => {
     const snap = await get(ref(db, "users"));
     if (!snap.exists()) return;
@@ -184,16 +205,28 @@ export default function App() {
   };
 
   const loadMyTimeline = (uid) => {
-    onValue(ref(db, "timeline/" + uid), (snap) => {
-      if (!snap.exists()) { setMyTimeline([]); return; }
-      const list = [];
-      snap.forEach(c => {
-        const val = c.val();
-        if (val && (val.text || val.imageUrl)) list.push({ ...val, id: c.key });
-      });
-      setMyTimeline(list.slice().reverse());
+  onValue(ref(db, "timeline/" + uid), (snap) => {
+    if (!snap.exists()) {
+      setMyTimeline([]);
+      return;
+    }
+
+    const list = [];
+
+    snap.forEach(c => {
+      const val = c.val();
+
+      if (val && (val.text || val.imageUrl)) {
+        list.push({
+          ...val,
+          id: c.key // 🔥 必ず最後に入れる
+        });
+      }
     });
-  };
+
+    setMyTimeline(list.slice().reverse());
+  });
+};
 
   const loadProfileTimeline = async (uid, forceReload = false) => {
     if (profileTimelines[uid] && !forceReload) return;
@@ -204,6 +237,17 @@ export default function App() {
       if (val && (val.text || val.imageUrl)) list.push({ id: c.key, ...val });
     });
     setProfileTimelines(prev => ({ ...prev, [uid]: list.slice().reverse() }));
+  };
+
+  const getUserInfo = async (uid) => {
+    if (usersCache[uid]) return usersCache[uid];
+    const snap = await get(ref(db, "users/" + uid));
+    if (snap.exists()) {
+      const u = { name: snap.val().name, avatar: snap.val().avatar };
+      setUsersCache(prev => ({ ...prev, [uid]: u }));
+      return u;
+    }
+    return { name: "不明", avatar: "🌿" };
   };
 
   const handleAuth = async () => {
@@ -233,6 +277,7 @@ export default function App() {
     } finally { setAuthLoading(false); }
   };
 
+  // ── Storage にアバター画像をアップロードして URL を返す
   const uploadAvatar = async (uid, file) => {
     if (file.size > 1024 * 1024) throw new Error("画像は1MB以下にしてください");
     const fileRef = storageRef(storage, `avatars/${uid}/avatar.jpg`);
@@ -240,45 +285,85 @@ export default function App() {
     return await getDownloadURL(fileRef);
   };
 
+  // ──────────────────────────────────────────────────────────
+  // プロフィール登録・更新
+  //
+  // ルール：
+  //   ・画像ファイルを選択した → avatarUrl に URL を保存、avatar（絵文字）も保持
+  //   ・絵文字を選択した       → avatarUrl を "" にして絵文字だけで表示
+  // ──────────────────────────────────────────────────────────
   const submitProfile = async () => {
-    if (!profileForm.name || !profileForm.severity) {
-      alert("ニックネームと症状の重さは必須です");
+  // ── 必須チェック
+  if (!profileForm.name || !profileForm.severity) {
+    alert("ニックネームと症状の重さは必須です");
+    return;
+  }
+
+  // ── 年齢チェック（任意入力）
+  const ageStr = profileForm.age; // ← 必ず文字列で管理
+  const ageNum = Number(ageStr);
+
+  if (ageStr) {
+    // 数字チェック
+    if (!/^\d+$/.test(ageStr)) {
+      alert("年齢は数字で入力してください");
       return;
     }
-    const ageStr = profileForm.age;
-    const ageNum = Number(ageStr);
-    if (ageStr) {
-      if (!/^\d+$/.test(ageStr)) { alert("年齢は数字で入力してください"); return; }
-      if (ageNum < 18 || ageNum > 100) { alert("年齢は18〜100歳で入力してください"); return; }
+
+    // 範囲チェック
+    if (ageNum < 18 || ageNum > 100) {
+      alert("年齢は18〜100歳で入力してください");
+      return;
     }
-    let avatarUrl = profileForm.avatarUrl || "";
-    if (avatarFile) {
-      try {
-        avatarUrl = await uploadAvatar(currentUser.uid, avatarFile);
-      } catch (e) { alert(e.message); return; }
-    }
-    const profile = {
-      ...profileForm,
-      age: ageStr,
-      uid: currentUser.uid,
-      createdAt: Date.now(),
-      avatarUrl
-    };
+  }
+
+  // ── アバター画像処理
+  let avatarUrl = profileForm.avatarUrl || "";
+
+  if (avatarFile) {
     try {
-      await set(ref(db, "users/" + currentUser.uid), profile);
-      setMyProfile(profile);
-      setAvatarFile(null);
-      setAvatarPreview(null);
-      loadAllProfiles(currentUser.uid);
-      loadMatches(currentUser.uid);
-      loadMyTimeline(currentUser.uid);
-      setScreen("browse");
+      avatarUrl = await uploadAvatar(currentUser.uid, avatarFile);
     } catch (e) {
-      alert("プロフィール登録に失敗しました");
-      console.error(e);
+      alert(e.message);
+      return;
     }
+  }
+
+  // ── プロフィールデータ作成
+  const profile = {
+    ...profileForm,
+    age: ageStr, // ← 文字列のまま保存でOK
+    uid: currentUser.uid,
+    createdAt: Date.now(),
+    avatarUrl
   };
 
+  try {
+    // ── DB保存
+    await set(ref(db, "users/" + currentUser.uid), profile);
+
+    // ── state更新
+    setMyProfile(profile);
+    setAvatarFile(null);
+    setAvatarPreview(null);
+
+    // ── データ再取得
+    loadAllProfiles(currentUser.uid);
+    loadMatches(currentUser.uid);
+    loadMyTimeline(currentUser.uid);
+
+    // ── 画面遷移
+    setScreen("browse");
+
+  } catch (e) {
+    alert("プロフィール登録に失敗しました");
+    console.error(e);
+  }
+};
+
+  // ──────────────────────────────────────────────────────────
+  // 「絵文字に戻す」：DB の avatarUrl を "" にするだけ
+  // ──────────────────────────────────────────────────────────
   const resetToEmoji = async () => {
     if (!window.confirm("画像を削除して絵文字アバターに戻しますか？")) return;
     try {
@@ -286,59 +371,90 @@ export default function App() {
       setMyProfile(prev => ({ ...prev, avatarUrl: "" }));
       setAvatarPreview(null);
       showToast(`${myProfile.avatar || "🌿"} 絵文字に戻しました`);
-    } catch (e) { alert("エラー: " + e.message); }
+    } catch (e) {
+      alert("エラー: " + e.message);
+    }
   };
 
   const postTimeline = async () => {
-    if (!timelineInput.trim() && !imageFile) return;
-    if (timelineLoading) return;
-    setTimelineLoading(true);
-    try {
-      let imageUrl = null;
-      let imagePath = null;
-      const newRef = push(ref(db, "timeline/" + currentUser.uid));
-      const postId = newRef.key;
-      if (imageFile) {
-        if (imageFile.size > 3 * 1024 * 1024) {
-          alert("画像は3MB以下にしてください");
-          setTimelineLoading(false);
-          return;
-        }
-        const fileName = Date.now() + "_" + imageFile.name;
-        // ⚠️ 修正③: currentUser.uid を正しく参照（元コードは c.uid になっていた）
-        imagePath = `timelineImages/${currentUser.uid}/${postId}/${fileName}`;
-        const fileRef = storageRef(storage, imagePath);
-        await uploadBytes(fileRef, imageFile);
-        imageUrl = await getDownloadURL(fileRef);
-      }
-      await set(newRef, {
-        text: timelineInput.trim(),
-        createdAt: Date.now(),
-        imageUrl: imageUrl || null,
-        imagePath: imagePath || null
-      });
-      setTimelineInput("");
-      setImageFile(null);
-      setImagePreview(null);
-    } catch (e) {
-      console.error(e);
-      alert("投稿に失敗しました: " + e.message);
-    } finally { setTimelineLoading(false); }
-  };
+  if (!timelineInput.trim() && !imageFile) return;
+  if (timelineLoading) return;
 
-  const deleteTimeline = async (ownerUid, id, imagePath) => {
-    if (!window.confirm("この投稿を削除しますか？")) return;
-    try {
-      if (imagePath) {
-        try { await deleteObject(storageRef(storage, imagePath)); }
-        catch (e) { console.warn("Storage削除失敗:", e.message); }
+  setTimelineLoading(true);
+
+  try {
+    let imageUrl = null;
+    let imagePath = null;
+
+    // 🔥 pushでID生成（これが正）
+    const newRef = push(ref(db, "timeline/" + currentUser.uid));
+    const postId = newRef.key;
+
+    if (imageFile) {
+      if (imageFile.size > 3 * 1024 * 1024) {
+        alert("画像は3MB以下にしてください");
+        setTimelineLoading(false);
+        return;
       }
-      await remove(ref(db, `timeline/${ownerUid}/${id}`));
-    } catch (e) {
-      console.error("削除エラー:", e);
-      alert("削除に失敗しました");
+
+      const fileName = Date.now() + "_" + imageFile.name;
+
+      // 🔥 DBのIDと完全一致させる
+      imagePath = `timelineImages/${currentUser.uid}/${postId}/${fileName}`;
+
+      const fileRef = storageRef(storage, imagePath);
+      await uploadBytes(fileRef, imageFile);
+      imageUrl = await getDownloadURL(fileRef);
     }
-  };
+
+    const postData = {
+      text: timelineInput.trim(),
+      createdAt: Date.now(),
+      imageUrl: imageUrl || null,
+      imagePath: imagePath || null
+    };
+
+    // 🔥 pushじゃなくset
+    await set(newRef, postData);
+
+    setTimelineInput("");
+    setImageFile(null);
+    setImagePreview(null);
+
+  } catch (e) {
+    console.error(e);
+    alert("投稿に失敗しました: " + e.message);
+  } finally {
+    setTimelineLoading(false);
+  }
+};
+ const deleteTimeline = async (ownerUid, id, imagePath) => {
+  if (!window.confirm("この投稿を削除しますか？")) return;
+
+  try {
+    console.log("削除UID:", ownerUid);
+    console.log("削除ID:", id);
+
+    // Storage削除
+    if (imagePath) {
+      try {
+        await deleteObject(storageRef(storage, imagePath));
+        console.log("画像削除OK");
+      } catch (e) {
+        console.warn("Storage削除失敗:", e.message);
+      }
+    }
+
+    // 🔥 UIDを明示して削除（これが重要）
+    await remove(ref(db, `timeline/${ownerUid}/${id}`));
+
+    console.log("削除成功");
+
+  } catch (e) {
+    console.error("削除エラー:", e);
+    alert("削除に失敗しました");
+  }
+};
 
   const loadMyLikes = (uid) => {
     onValue(ref(db, "likes/" + uid), (snap) => {
@@ -350,6 +466,8 @@ export default function App() {
     setToast(msg);
     setTimeout(() => setToast(null), duration);
   };
+
+
 
   const loadUnreadChats = (matchesData) => {
     if (!currentUser) return;
@@ -451,13 +569,15 @@ export default function App() {
       setViewProfile({ uid: n.fromUserId, ...snap.val() });
       await loadProfileTimeline(n.fromUserId, true);
       setScreen("viewProfile");
-    } else if (n.type === "post_like" || n.type === "comment") {
-      setHighlightedPostId(null);
-      setScreen("mypage");
-      if (n.postId) {
-        setTimeout(() => setHighlightedPostId(n.postId), 0);
-      }
-    }
+   } else if (n.type === "post_like" || n.type === "comment") {
+  // ① まず highlight をリセット
+  setHighlightedPostId(null);
+  // ② マイページに遷移
+  setScreen("mypage");
+if (n.postId) {
+  setTimeout(() => setHighlightedPostId(n.postId), 0); // 600 → 0
+}
+}
   };
 
   const toggleArr = (key, val) => setProfileForm(f => ({
@@ -500,7 +620,7 @@ export default function App() {
     </div>
   ) : null;
 
-  // ── viewProfile ───────────────────────────────────────────
+  // ── viewProfile ──────────────────────────────────────────
   if (screen === "viewProfile" && !viewProfile) {
     return <div style={{ padding:20,textAlign:"center",color:"#6b8f71" }}>読み込み中...</div>;
   }
@@ -597,7 +717,7 @@ export default function App() {
     </div></div>
   );
 
-  // ── auth ──────────────────────────────────────────────────
+  // ── auth ─────────────────────────────────────────────────
   if (screen === "auth") return (
     <div style={S.app}>
       {tutorialEl}
@@ -624,23 +744,32 @@ export default function App() {
     </div>
   );
 
-  // ── register ──────────────────────────────────────────────
+  // ── register ─────────────────────────────────────────────
   if (screen === "register") return (
     <div style={S.app}><div style={S.page}>
       <div style={S.bar}><span style={S.barTitle}>🌿 プロフィール作成</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
       <div style={{ padding:16,overflowY:"auto",flex:1 }}>
         <div style={S.card}>
+
+          {/* ────────────────────────────────────────
+              アバター選択エリア
+          ──────────────────────────────────────── */}
           <label style={S.label}>アバター</label>
+
+          {/* プレビュー + 現在の状態表示 */}
           <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:10,marginBottom:16,padding:"16px 0",background:"#f0f7f2",borderRadius:12 }}>
+            {/* 選択中の状態をリアルタイムでプレビュー */}
             {avatarPreview
               ? <img src={avatarPreview} alt="プレビュー" style={{ width:88,height:88,borderRadius:"50%",objectFit:"cover",border:"2px solid #52a875" }} />
               : <AvatarImg avatarUrl={profileForm.avatarUrl} emoji={profileForm.avatar} size={88} />
             }
+            {/* どちらが有効か表示 */}
             <div style={{ fontSize:11,color:"#6b8f71",fontWeight:700 }}>
               {avatarPreview ? "📷 画像を選択中（未保存）"
                 : profileForm.avatarUrl ? "📷 画像アバター"
                 : `${profileForm.avatar} 絵文字アバター`}
             </div>
+            {/* 画像選択 */}
             <label style={{ cursor:"pointer",background:"#fff",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 16px",fontSize:12,fontWeight:700,color:"#52a875" }}>
               📷 画像を選択（1MB以下）
               <input type="file" accept="image/*" style={{ display:"none" }}
@@ -653,6 +782,7 @@ export default function App() {
                   e.target.value = "";
                 }} />
             </label>
+            {/* 画像選択中はキャンセルボタン */}
             {(avatarFile || avatarPreview) && (
               <button onClick={() => { setAvatarFile(null); setAvatarPreview(null); setProfileForm(f => ({ ...f, avatarUrl: "" })); }}
                 style={{ background:"none",border:"none",color:"#e57373",fontSize:12,cursor:"pointer",fontWeight:700 }}>
@@ -660,11 +790,18 @@ export default function App() {
               </button>
             )}
           </div>
+
+          {/* 絵文字グリッド */}
           <label style={S.label}>または絵文字を選択</label>
           <div style={{ ...S.chips,marginBottom:14 }}>
             {AVATARS.map(a => (
               <button key={a}
-                onClick={() => { setAvatarFile(null); setAvatarPreview(null); setProfileForm(f => ({ ...f, avatar: a, avatarUrl: "" })); }}
+                onClick={() => {
+                  // 絵文字を選ぶと画像選択をリセット
+                  setAvatarFile(null);
+                  setAvatarPreview(null);
+                  setProfileForm(f => ({ ...f, avatar: a, avatarUrl: "" }));
+                }}
                 style={{
                   fontSize:24,
                   background: !avatarFile && !avatarPreview && profileForm.avatar === a ? "#e8f5e9" : "#f0f7f2",
@@ -675,15 +812,28 @@ export default function App() {
               </button>
             ))}
           </div>
+
           <label style={S.label}>ニックネーム</label>
           <input style={{ ...S.input,marginBottom:12 }} placeholder="さくら" value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f,name:e.target.value }))} />
           <div style={{ display:"flex",gap:12,marginBottom:12 }}>
             <div style={{ flex:1 }}>
               <label style={S.label}>年齢（18歳以上）</label>
-              <input type="text" inputMode="numeric" placeholder="25" value={profileForm.age}
-                onFocus={e => e.target.select()}
-                onChange={e => { const val = e.target.value; if (/^\d*$/.test(val)) setProfileForm(f => ({ ...f, age: val })); }}
-                style={S.input} />
+           <input
+  type="text"
+  inputMode="numeric"
+  placeholder="25"
+  value={profileForm.age}
+  onFocus={(e) => e.target.select()}
+  onChange={(e) => {
+    const val = e.target.value;
+
+    // ゆるく数字だけ許可
+    if (/^\d*$/.test(val)) {
+      setProfileForm(f => ({ ...f, age: val }));
+    }
+  }}
+  style={S.input}
+/>
             </div>
             <div style={{ flex:1 }}>
               <label style={S.label}>地域</label>
@@ -710,7 +860,7 @@ export default function App() {
     </div></div>
   );
 
-  // ── browse ────────────────────────────────────────────────
+  // ── browse ───────────────────────────────────────────────
   if (screen === "browse") return (
     <div style={S.app}><div style={S.page}>
       <div style={S.bar}><span style={S.barTitle}>🌿 自分と似ている人</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
@@ -733,6 +883,7 @@ export default function App() {
           return (
             <div key={p.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
               <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px" }} onClick={() => toggleExpand(p.uid)}>
+                {/* 画像→絵文字の順で自動判定して表示 */}
                 <AvatarImg avatarUrl={p.avatarUrl} emoji={p.avatar} size={50} />
                 <div style={{ flex:1,minWidth:0 }}>
                   <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{p.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{p.age}歳</span></div>
@@ -775,7 +926,7 @@ export default function App() {
     </div></div>
   );
 
-  // ── matches ───────────────────────────────────────────────
+  // ── matches ──────────────────────────────────────────────
   if (screen === "matches") return (
     <div style={S.app}><div style={S.page}>
       <div style={S.bar}><span style={S.barTitle}>💚 マッチ一覧</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
@@ -837,12 +988,15 @@ export default function App() {
     </div></div>
   );
 
-  // ── mypage ────────────────────────────────────────────────
-  // ⚠️ 修正④: `if (screen === "mypage") console.log(...) return (` の構文エラーを修正
-  if (screen === "mypage") return (
+  // ── mypage ───────────────────────────────────────────────
+  if (screen === "mypage") 
+    console.log("map前", notifications.length);
+    return (
     <div style={S.app}><div style={S.page}>
       <div style={S.bar}><span style={S.barTitle}>👤 マイページ</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
       <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
+
+        {/* 通知 */}
         {notifications.length === 0 && (
           <div style={{ ...S.card,textAlign:"center",padding:"20px 24px" }}>
             <div style={{ fontSize:32,marginBottom:8 }}>🔔</div>
@@ -854,6 +1008,7 @@ export default function App() {
           <div style={S.card}>
             <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
             <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+              
               {notifications.slice(0, visibleCount).map(n => (
                 <button key={n.id} onClick={() => handleNotificationClick(n)}
                   style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:n.read?"#f0f7f2":"#e8f5e9",borderRadius:12,border:n.read?"none":"1.5px solid #c8e6c9",cursor:"pointer",width:"100%",textAlign:"left" }}>
@@ -875,18 +1030,28 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* プロフィールカード */}
         {myProfile && (
           <div style={S.card}>
             <div style={{ textAlign:"center",marginBottom:16 }}>
+
+              {/* ────────────────────────────────────────
+                  マイページ：アバター表示 + 変更UI
+              ──────────────────────────────────────── */}
               <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:12 }}>
+
+                {/* アバタープレビュー（保存中は仮表示） */}
                 {avatarPreview
                   ? <img src={avatarPreview} alt="プレビュー" style={{ width:96,height:96,borderRadius:"50%",objectFit:"cover",border:"2px solid #52a875" }} />
                   : <AvatarImg avatarUrl={myProfile.avatarUrl} emoji={myProfile.avatar} size={96} />
                 }
+
                 {avatarSaving
                   ? <div style={{ fontSize:12,color:"#52a875",fontWeight:700 }}>保存中...</div>
                   : (
                     <div style={{ display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center" }}>
+                      {/* 画像変更 */}
                       <label style={{ cursor:"pointer",background:"#f0f7f2",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:700,color:"#52a875" }}>
                         📷 画像を変更
                         <input type="file" accept="image/*" style={{ display:"none" }}
@@ -909,6 +1074,8 @@ export default function App() {
                             } finally { setAvatarSaving(false); }
                           }} />
                       </label>
+
+                      {/* 画像が設定されている場合のみ「絵文字に戻す」を表示 */}
                       {myProfile.avatarUrl && (
                         <button onClick={resetToEmoji}
                           style={{ background:"#fff",border:"1.5px solid #e0ede5",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:700,color:"#6b8f71",cursor:"pointer" }}>
@@ -919,6 +1086,7 @@ export default function App() {
                   )
                 }
               </div>
+
               <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{myProfile.name}</div>
               <div style={{ fontSize:13,color:"#6b8f71" }}>{myProfile.age}歳 · {myProfile.gender} · {myProfile.location}</div>
             </div>
@@ -933,6 +1101,8 @@ export default function App() {
             <button style={{ ...S.btn,marginTop:16 }} onClick={() => { setProfileForm(myProfile); setAvatarPreview(null); setAvatarFile(null); setScreen("register"); }}>プロフィールを編集</button>
           </div>
         )}
+
+        {/* タイムライン投稿 */}
         <div style={S.card}>
           <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>📝 タイムライン</div>
           <textarea style={{ ...S.input,height:70,resize:"vertical",marginBottom:8 }} placeholder="今日の体調や日常を投稿しましょう..." value={timelineInput} onChange={e => setTimelineInput(e.target.value)} />
