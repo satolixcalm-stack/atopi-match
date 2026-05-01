@@ -223,14 +223,15 @@ comments.forEach(c => {
   }
 });
   return (
-    <div
-      ref={postRef}
-      style={{
-        padding: "12px",
-        background: "#f0f7f2",
-        borderRadius: 12
-      }}
-    >
+  <div
+  ref={postRef}
+  style={{
+    padding: "12px",
+    background: "#f0f7f2",
+    borderRadius: 12,
+    position: "relative" // ←ここ追加
+  }}
+>
       {/* 🔥 投稿者表示 */}
       {ownerUser && (
         <div
@@ -299,15 +300,7 @@ comments.forEach(c => {
           }}
         />
       )}
-<div
-  ref={postRef}
-  style={{
-    padding: "12px",
-    background: "#f0f7f2",
-    borderRadius: 12,
-    position: "relative" // ←ここ追加
-  }}
->
+
 
       {/* コメント */}
     {/* コメント */}
@@ -361,7 +354,7 @@ comments.forEach(c => {
     ❤️ {parent.likes ? Object.keys(parent.likes).length : 0}
   </button>
 </div>
-      
+       </div>
          
         </div>
 
