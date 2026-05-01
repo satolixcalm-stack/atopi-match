@@ -260,7 +260,8 @@ comments.forEach(c => {
   ref={postRef}
   style={{
     padding: "12px",
-    background: "#f0f7f2",
+    background: isHighlighted ? "#fff3cd" : "#f0f7f2",
+　　transition: "0.3s",
     borderRadius: 12,
     position: "relative" // ←ここ追加
   }}
