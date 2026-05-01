@@ -178,6 +178,15 @@ const formatDate = (ts) => {
 
   return new Date(ts).toLocaleDateString();
 };
+  const formatDate = (ts) => {
+  const diff = Date.now() - ts;
+
+  if (diff < 60000) return "たった今";
+  if (diff < 3600000) return Math.floor(diff / 60000) + "分前";
+  if (diff < 86400000) return Math.floor(diff / 3600000) + "時間前";
+
+  return new Date(ts).toLocaleDateString();
+};
   return (
     <div
       ref={postRef}
@@ -285,23 +294,40 @@ const formatDate = (ts) => {
       key={c.id}
       style={{
         display: "flex",
-        gap: 6,
         alignItems: "center",
-        justifyContent: "space-between"
+        justifyContent: "space-between",
+        gap: 6
       }}
     >
-      <div style={{ display: "flex", gap: 6 }}>
-        <Avatar
-          avatarUrl={c.userAvatarUrl}
-          avatar={c.userAvatar}
-          size={18}
-        />
-        <span>
-          <b>{c.userName}</b>：{c.text}
-        </span>
+      {/* 左側：アバター＋テキスト */}
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        
+        {/* 🔥 アバタークリックでプロフィールへ */}
+        <div
+          style={{ cursor: "pointer" }}
+          onClick={() => onClickUser(c.userId)}
+        >
+          <Avatar
+            avatarUrl={c.userAvatarUrl}
+            avatar={c.userAvatar}
+            size={18}
+          />
+        </div>
+
+        <div>
+          <div>
+            <b>{c.userName}</b>：{c.text}
+          </div>
+
+          {/* 🔥 日時表示 */}
+          <div style={{ fontSize: 10, color: "#888" }}>
+            {c.createdAt && formatDate(c.createdAt)}
+          </div>
+        </div>
       </div>
 
-      {c.userId === currentUser.uid && (
+      {/* 🔥 削除ボタン */}
+      {(c.userId === currentUser.uid || ownerUid === currentUser.uid) && (
         <button
           onClick={() => deleteComment(c.id)}
           style={{
