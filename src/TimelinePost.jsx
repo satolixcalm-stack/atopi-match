@@ -252,56 +252,47 @@ function TimelinePostInner({
       </div>
 
       {/* コメント */}
-      <div style={{ marginTop: 10 }}>
-        {comments.map((c) => (
-  <div
-    key={c.id}
-    style={{
-      display: "flex",
-      gap: 6,
-      alignItems: "center",
-      justifyContent: "space-between"
-    }}
-  >
-    <div style={{ display: "flex", gap: 6 }}>
-      <Avatar
-        avatarUrl={c.userAvatarUrl}
-        avatar={c.userAvatar}
-        size={18}
-      />
-      <span>
-        <b>{c.userName}</b>：{c.text}
-      </span>
-    </div>
-
-    {/* 🔥 自分のコメントだけ削除 */}
-    {c.userId === currentUser.uid && (
-      <button
-        onClick={() => deleteComment(c.id)}
-        style={{
-          background: "transparent",
-          border: "none",
-          color: "#e53935",
-          fontSize: 14,
-          cursor: "pointer"
-        }}
-      >
-        ×
-      </button>
-    )}
-  </div>
-))}
-            <Avatar
-              avatarUrl={c.userAvatarUrl}
-              avatar={c.userAvatar}
-              size={18}
-            />
-            <span>
-              <b>{c.userName}</b>：{c.text}
-            </span>
-          </div>
-        ))}
+    {/* コメント */}
+<div style={{ marginTop: 10 }}>
+  {comments.map((c) => (
+    <div
+      key={c.id}
+      style={{
+        display: "flex",
+        gap: 6,
+        alignItems: "center",
+        justifyContent: "space-between"
+      }}
+    >
+      <div style={{ display: "flex", gap: 6 }}>
+        <Avatar
+          avatarUrl={c.userAvatarUrl}
+          avatar={c.userAvatar}
+          size={18}
+        />
+        <span>
+          <b>{c.userName}</b>：{c.text}
+        </span>
       </div>
+
+      {c.userId === currentUser.uid && (
+        <button
+          onClick={() => deleteComment(c.id)}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#e53935",
+            fontSize: 14,
+            cursor: "pointer"
+          }}
+        >
+          ×
+        </button>
+      )}
+    </div>
+  ))}
+</div>
+
 
       {/* 入力 */}
       <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
