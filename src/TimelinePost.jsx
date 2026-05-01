@@ -154,10 +154,8 @@ function TimelinePostInner({
   };
 
   const postComment = async () => {
-    
   const text = commentInput.trim();
   if (!text) return;
-console.log("コメント送信", replyTarget);
   setCommentInput("");
 
   const snap = await get(ref(db, "users/" + currentUser.uid));
@@ -170,53 +168,42 @@ console.log("コメント送信", replyTarget);
       userId: currentUser.uid,
       userName: user.name,
       userAvatar: user.avatar,
-      userAvatarUrl: user.avatarUrl,
+      userAvatarUrl: user.avatarUrl || "",
       createdAt: Date.now(),
-
-      // 🔥 ここ追加
       replyTo: replyTarget
-        ? {
-            userId: replyTarget.userId,
-            userName: replyTarget.userName,
-            commentId: replyTarget.id
-          }
+        ? { userId: replyTarget.userId, userName: replyTarget.userName, commentId: replyTarget.id }
         : null
     }
   );
     
-if (replyTarget && replyTarget.userId !== currentUser.uid) {
-  const replyNotifRef = push(ref(db, "notifications/" + replyTarget.userId));
+  // ① 投稿者への通知（自分の投稿へのコメントは除く）
+  if (ownerUid !== currentUser.uid) {
+    await set(push(ref(db, "notifications/" + ownerUid)), {
+      type: "comment",
+      fromUserId: currentUser.uid,
+      fromUserName: user.name,
+      fromUserAvatar: user.avatar || "",
+      postId: post.id,           // ← 通知クリックでスクロールするために必須
+      ownerUid: ownerUid,
+      createdAt: Date.now(),
+      read: false
+    });
+  }
 
-  await set(replyNotifRef, {
-    type: "reply",
-    fromUserId: currentUser.uid,
-    fromUserName: user.name,
-    fromUserAvatar: user.avatar,
-    fromUserAvatarUrl: user.avatarUrl,
-    postId: post.id,
-    ownerUid: ownerUid,
-    createdAt: Date.now(),
-    read: false
-  });
-}
+  // ② 返信先への通知（重複なし・1回だけ）
+  if (replyTarget && replyTarget.userId !== currentUser.uid && replyTarget.userId !== ownerUid) {
+    await set(push(ref(db, "notifications/" + replyTarget.userId)), {
+      type: "reply",
+      fromUserId: currentUser.uid,
+      fromUserName: user.name,
+      fromUserAvatar: user.avatar || "",
+      postId: post.id,
+      ownerUid: ownerUid,
+      createdAt: Date.now(),
+      read: false
+    });
+  }
 
-// 👇さらにその下に追加
-if (replyTarget && replyTarget.userId !== currentUser.uid) {
-  const replyNotifRef = push(ref(db, "notifications/" + replyTarget.userId));
-
-  await set(replyNotifRef, {
-    type: "reply",
-    fromUserId: currentUser.uid,
-    fromUserName: user.name,
-    fromUserAvatar: user.avatar,
-    fromUserAvatarUrl: user.avatarUrl,
-    postId: post.id,
-    ownerUid: ownerUid,
-    createdAt: Date.now(),
-    read: false
-  });
-}
-  // 🔥 返信状態リセット
   setReplyTarget(null);
 };
   const toggleCommentLike = async (commentId, currentLikes, commentUserId) => {
