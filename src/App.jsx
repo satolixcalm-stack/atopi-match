@@ -389,12 +389,22 @@ export default function App() {
   }
 };
 
-  const deleteTimeline = async (id, imagePath) => {
-    if (!window.confirm("この投稿を削除しますか？")) return;
-    if (imagePath) {
-      try { await deleteObject(storageRef(storage, imagePath)); }
-      catch (e) { console.warn("Storage削除失敗:", e.message); }
+ const deleteTimeline = async (id, imagePath) => {
+  console.log("削除開始");
+  console.log("uid:", currentUser.uid);
+  console.log("id:", id);
+
+  if (!window.confirm("この投稿を削除しますか？")) return;
+
+  if (imagePath) {
+    try {
+      await deleteObject(storageRef(storage, imagePath));
+      console.log("Storage削除OK");
+    } catch (e) {
+      console.warn("Storage削除失敗:", e.message);
     }
+  }
+
     await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
   };
 
