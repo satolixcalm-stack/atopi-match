@@ -184,7 +184,21 @@ function TimelinePostInner({
         : null
     }
   );
+if (ownerUid !== currentUser.uid) {
+  const notifRef = push(ref(db, "notifications/" + ownerUid));
 
+  await set(notifRef, {
+    type: "comment",
+    fromUserId: currentUser.uid,
+    fromUserName: user.name,
+    fromUserAvatar: user.avatar,
+    fromUserAvatarUrl: user.avatarUrl,
+    postId: post.id,
+    ownerUid: ownerUid,
+    createdAt: Date.now(),
+    read: false
+  });
+}
   // 🔥 返信状態リセット
   setReplyTarget(null);
 };
