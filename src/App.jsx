@@ -556,10 +556,9 @@ export default function App() {
   setHighlightedPostId(null);
   // ② マイページに遷移
   setScreen("mypage");
-  // ③ 投稿リストのレンダリングを待ってからセット（600msに延長）
-  if (n.postId) {
-    setTimeout(() => setHighlightedPostId(n.postId), 600);
-  }
+if (n.postId) {
+  setTimeout(() => setHighlightedPostId(n.postId), 0); // 600 → 0
+}
 }
   };
 
