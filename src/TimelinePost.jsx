@@ -150,7 +150,21 @@ function TimelinePostInner({
       }
     );
   };
+  const deleteComment = async (commentId) => {
+  if (!window.confirm("コメントを削除しますか？")) return;
 
+  try {
+    await remove(
+      ref(
+        db,
+        `timeline/${ownerUid}/${post.id}/comments/${commentId}`
+      )
+    );
+  } catch (e) {
+    console.error("コメント削除失敗:", e);
+    alert("削除に失敗しました");
+  }
+};
   const isLiked = !!likes[currentUser.uid];
   const likeCount = Object.keys(likes).length;
   const displayUsers = likeUsers.slice(0, 3);
@@ -240,7 +254,43 @@ function TimelinePostInner({
       {/* コメント */}
       <div style={{ marginTop: 10 }}>
         {comments.map((c) => (
-          <div key={c.id} style={{ display: "flex", gap: 6 }}>
+  <div
+    key={c.id}
+    style={{
+      display: "flex",
+      gap: 6,
+      alignItems: "center",
+      justifyContent: "space-between"
+    }}
+  >
+    <div style={{ display: "flex", gap: 6 }}>
+      <Avatar
+        avatarUrl={c.userAvatarUrl}
+        avatar={c.userAvatar}
+        size={18}
+      />
+      <span>
+        <b>{c.userName}</b>：{c.text}
+      </span>
+    </div>
+
+    {/* 🔥 自分のコメントだけ削除 */}
+    {c.userId === currentUser.uid && (
+      <button
+        onClick={() => deleteComment(c.id)}
+        style={{
+          background: "transparent",
+          border: "none",
+          color: "#e53935",
+          fontSize: 14,
+          cursor: "pointer"
+        }}
+      >
+        ×
+      </button>
+    )}
+  </div>
+))}
             <Avatar
               avatarUrl={c.userAvatarUrl}
               avatar={c.userAvatar}
