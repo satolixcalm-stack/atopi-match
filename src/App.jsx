@@ -20,22 +20,46 @@ const AVATARS = [
 ];
 const PAGE_SIZE = 3;
 
-// ── デフォルトアバター（外部ファイル不要）
-const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23e0ede5'/%3E%3Ccircle cx='32' cy='26' r='11' fill='%23b0c8b8'/%3E%3Cellipse cx='32' cy='54' rx='19' ry='13' fill='%23b0c8b8'/%3E%3C/svg%3E";
-
-// ── 丸いアバター画像コンポーネント
-function AvatarImg({ url, size = 48 }) {
+// ──────────────────────────────────────────────────────────
+// AvatarImg コンポーネント（画像・絵文字 両対応）
+//
+// 表示の優先順位：
+//   1. avatarUrl（画像URL）が有効な文字列 → 丸い写真
+//   2. emoji（絵文字）がある              → 丸い枠に絵文字
+//   3. どちらもない                       → デフォルト絵文字 🌿
+//
+// 使い方：
+//   <AvatarImg avatarUrl={p.avatarUrl} emoji={p.avatar} size={50} />
+// ──────────────────────────────────────────────────────────
+function AvatarImg({ avatarUrl, emoji, size = 48 }) {
+  // avatarUrl が空文字・null・undefined でなければ画像を表示
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt="avatar"
+        onError={e => {
+          // 画像の読み込みに失敗したら非表示にして絵文字を見せる
+          e.target.style.display = "none";
+        }}
+        style={{
+          width: size, height: size, borderRadius: "50%",
+          objectFit: "cover", border: "2px solid #c8e6c9",
+          background: "#f0f7f2", flexShrink: 0,
+        }}
+      />
+    );
+  }
+  // 画像がない場合は絵文字を丸枠で表示
   return (
-    <img
-      src={url || DEFAULT_AVATAR}
-      alt="avatar"
-      onError={e => { e.target.src = DEFAULT_AVATAR; }}
-      style={{
-        width: size, height: size, borderRadius: "50%",
-        objectFit: "cover", border: "2px solid #c8e6c9",
-        background: "#f0f7f2", flexShrink: 0,
-      }}
-    />
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: "#f0f7f2", border: "2px solid #c8e6c9",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.48, flexShrink: 0, userSelect: "none",
+    }}>
+      {emoji || "🌿"}
+    </div>
   );
 }
 
@@ -94,9 +118,9 @@ export default function App() {
   const [unreadChats, setUnreadChats] = useState({});
 
   // ── アバター用 state
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);       // 選択中の画像ファイル
+  const [avatarPreview, setAvatarPreview] = useState(null); // プレビュー用 ObjectURL
+  const [avatarSaving, setAvatarSaving] = useState(false);  // 保存中フラグ
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
@@ -214,23 +238,29 @@ export default function App() {
     } finally { setAuthLoading(false); }
   };
 
-  // ── アバターアップロード共通関数
+  // ── Storage にアバター画像をアップロードして URL を返す
   const uploadAvatar = async (uid, file) => {
     if (file.size > 1024 * 1024) throw new Error("画像は1MB以下にしてください");
     const fileRef = storageRef(storage, `avatars/${uid}/avatar.jpg`);
     await uploadBytes(fileRef, file);
-    const url = await getDownloadURL(fileRef);
-    await set(ref(db, `users/${uid}/avatarUrl`), url);
-    return url;
+    return await getDownloadURL(fileRef);
   };
 
-  // ── プロフィール登録（アバター画像対応）
+  // ──────────────────────────────────────────────────────────
+  // プロフィール登録・更新
+  //
+  // ルール：
+  //   ・画像ファイルを選択した → avatarUrl に URL を保存、avatar（絵文字）も保持
+  //   ・絵文字を選択した       → avatarUrl を "" にして絵文字だけで表示
+  // ──────────────────────────────────────────────────────────
   const submitProfile = async () => {
     if (!profileForm.name || !profileForm.severity) return;
     if (profileForm.age && Number(profileForm.age) < 18) {
       alert("18歳以上の方のみご利用いただけます");
       return;
     }
+
+    // 新しい画像ファイルが選択されていればアップロード
     let avatarUrl = profileForm.avatarUrl || "";
     if (avatarFile) {
       try {
@@ -240,7 +270,14 @@ export default function App() {
         return;
       }
     }
-    const profile = { ...profileForm, uid: currentUser.uid, createdAt: Date.now(), avatarUrl };
+
+    const profile = {
+      ...profileForm,
+      uid: currentUser.uid,
+      createdAt: profileForm.createdAt || Date.now(),
+      avatarUrl, // 画像あり→URL、絵文字選択→""
+    };
+
     await set(ref(db, "users/" + currentUser.uid), profile);
     setMyProfile(profile);
     setAvatarFile(null);
@@ -249,6 +286,21 @@ export default function App() {
     loadMatches(currentUser.uid);
     loadMyTimeline(currentUser.uid);
     setScreen("browse");
+  };
+
+  // ──────────────────────────────────────────────────────────
+  // 「絵文字に戻す」：DB の avatarUrl を "" にするだけ
+  // ──────────────────────────────────────────────────────────
+  const resetToEmoji = async () => {
+    if (!window.confirm("画像を削除して絵文字アバターに戻しますか？")) return;
+    try {
+      await set(ref(db, `users/${currentUser.uid}/avatarUrl`), "");
+      setMyProfile(prev => ({ ...prev, avatarUrl: "" }));
+      setAvatarPreview(null);
+      showToast(`${myProfile.avatar || "🌿"} 絵文字に戻しました`);
+    } catch (e) {
+      alert("エラー: " + e.message);
+    }
   };
 
   const postTimeline = async () => {
@@ -272,10 +324,7 @@ export default function App() {
         imageUrl = await getDownloadURL(fileRef);
       }
       const postData = { text: timelineInput.trim(), createdAt: Date.now() };
-      if (imageUrl) {
-        postData.imageUrl = imageUrl;
-        postData.imagePath = imagePath;
-      }
+      if (imageUrl) { postData.imageUrl = imageUrl; postData.imagePath = imagePath; }
       await push(ref(db, "timeline/" + currentUser.uid), postData);
       setTimelineInput("");
       setImageFile(null);
@@ -288,12 +337,8 @@ export default function App() {
   const deleteTimeline = async (id, imagePath) => {
     if (!window.confirm("この投稿を削除しますか？")) return;
     if (imagePath) {
-      try {
-        const imgRef = storageRef(storage, imagePath);
-        await deleteObject(imgRef);
-      } catch (e) {
-        console.warn("Storage削除失敗:", e.message);
-      }
+      try { await deleteObject(storageRef(storage, imagePath)); }
+      catch (e) { console.warn("Storage削除失敗:", e.message); }
     }
     await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
   };
@@ -313,10 +358,7 @@ export default function App() {
     onValue(ref(db, "notifications/" + uid), (snap) => {
       if (!snap.exists()) { setNotifications([]); setUnreadCount(0); return; }
       const list = [];
-      snap.forEach(c => {
-        const item = { id: c.key, ...c.val() };
-        list.push(item);
-      });
+      snap.forEach(c => list.push({ id: c.key, ...c.val() }));
       list.sort((a, b) => b.createdAt - a.createdAt);
       setNotifications(list);
       setUnreadCount(list.filter(n => !n.read).length);
@@ -324,7 +366,6 @@ export default function App() {
   };
 
   const loadUnreadChats = (matchesData) => {
-    console.log("loadUnreadChats実行", currentUser?.uid, Object.keys(matchesData).length + "件");
     if (!currentUser) return;
     Object.values(matchesData).forEach(m => {
       if (!m.uid) return;
@@ -335,8 +376,7 @@ export default function App() {
         if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
         msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
         const last = msgs[msgs.length - 1];
-        const hasUnread = !!(last && last.senderUid && last.senderUid !== currentUser.uid);
-        setUnreadChats(prev => ({ ...prev, [m.uid]: hasUnread }));
+        setUnreadChats(prev => ({ ...prev, [m.uid]: !!(last?.senderUid && last.senderUid !== currentUser.uid) }));
       });
     });
   };
@@ -358,17 +398,15 @@ export default function App() {
       const myNotifsSnap = await get(ref(db, "notifications/" + currentUser.uid));
       if (myNotifsSnap.exists()) {
         for (const [id, n] of Object.entries(myNotifsSnap.val())) {
-          if ((n.type === "like" || n.type === "profile_like") && n.fromUserId === target.uid) {
+          if ((n.type === "like" || n.type === "profile_like") && n.fromUserId === target.uid)
             await remove(ref(db, "notifications/" + currentUser.uid + "/" + id));
-          }
         }
       }
       const theirNotifsSnap = await get(ref(db, "notifications/" + target.uid));
       if (theirNotifsSnap.exists()) {
         for (const [id, n] of Object.entries(theirNotifsSnap.val())) {
-          if ((n.type === "like" || n.type === "profile_like") && n.fromUserId === currentUser.uid) {
+          if ((n.type === "like" || n.type === "profile_like") && n.fromUserId === currentUser.uid)
             await remove(ref(db, "notifications/" + target.uid + "/" + id));
-          }
         }
       }
       loadAllProfiles(currentUser.uid);
@@ -396,26 +434,19 @@ export default function App() {
 
   useEffect(() => {
     if (!currentUser) return;
-    if (Object.keys(matches).length > 0) {
-      loadUnreadChats(matches);
-    }
+    if (Object.keys(matches).length > 0) loadUnreadChats(matches);
   }, [currentUser?.uid, JSON.stringify(Object.keys(matches))]);
 
   const toggleExpand = (uid) => {
-    if (expandedUid === uid) {
-      setExpandedUid(null);
-    } else {
-      setExpandedUid(uid);
-      loadProfileTimeline(uid);
-    }
+    if (expandedUid === uid) { setExpandedUid(null); }
+    else { setExpandedUid(uid); loadProfileTimeline(uid); }
   };
 
   const handleClickUser = async (uid) => {
     if (uid === currentUser.uid) { setScreen("mypage"); return; }
     const snap = await get(ref(db, "users/" + uid));
     if (snap.exists()) {
-      const profile = { uid, ...snap.val() };
-      setViewProfile(profile);
+      setViewProfile({ uid, ...snap.val() });
       loadProfileTimeline(uid);
       setScreen("viewProfile");
     }
@@ -431,8 +462,7 @@ export default function App() {
     if (n.type === "profile_like" || n.type === "like") {
       const snap = await get(ref(db, "users/" + n.fromUserId));
       if (!snap.exists()) return;
-      const profile = { uid: n.fromUserId, ...snap.val() };
-      setViewProfile(profile);
+      setViewProfile({ uid: n.fromUserId, ...snap.val() });
       await loadProfileTimeline(n.fromUserId, true);
       setScreen("viewProfile");
     } else if (n.type === "post_like" || n.type === "comment") {
@@ -464,13 +494,8 @@ export default function App() {
         <div style={{ fontSize:52,marginBottom:12 }}>🌿</div>
         <h2 style={{ fontSize:18,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>AtopiMatchへようこそ</h2>
         <p style={{ fontSize:14,color:"#6b8f71",lineHeight:1.8,marginBottom:20 }}>
-          このアプリは、<br/>
-          <strong>「共感 → マッチ → チャット」</strong>でつながります。<br/><br/>
-          <span style={{ fontSize:13 }}>
-            ① 気になる人に「共感」する<br/>
-            ② お互いに共感すると「マッチ」<br/>
-            ③ マッチすると「チャット」ができます
-          </span><br/><br/>
+          このアプリは、<br/><strong>「共感 → マッチ → チャット」</strong>でつながります。<br/><br/>
+          <span style={{ fontSize:13 }}>① 気になる人に「共感」する<br/>② お互いに共感すると「マッチ」<br/>③ マッチすると「チャット」ができます</span><br/><br/>
           まずは気になる人に共感してみましょう🌿
         </p>
         <button onClick={() => { setShowTutorial(false); localStorage.setItem('seenTutorial','1'); }}
@@ -487,6 +512,7 @@ export default function App() {
     </div>
   ) : null;
 
+  // ── viewProfile ──────────────────────────────────────────
   if (screen === "viewProfile" && !viewProfile) {
     return <div style={{ padding:20,textAlign:"center",color:"#6b8f71" }}>読み込み中...</div>;
   }
@@ -494,78 +520,66 @@ export default function App() {
     const tl = profileTimelines[viewProfile.uid] || [];
     const tlPage = profileTimelinePages[viewProfile.uid] || 0;
     return (
-      <div style={S.app}>
-        <div style={S.page}>
-          <div style={S.bar}>
-            <button style={S.ghost} onClick={() => { setViewProfile(null); setScreen("browse"); }}>← 戻る</button>
-            <span style={S.barTitle}>{viewProfile.name}さん</span>
-            <div style={{ width:60 }} />
-          </div>
-          <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
-            <div style={S.card}>
-              <div style={{ textAlign:"center",marginBottom:16 }}>
-                {/* ── アバター画像表示（viewProfile） */}
-                <div style={{ display:"flex",justifyContent:"center",marginBottom:8 }}>
-                  <AvatarImg url={viewProfile.avatarUrl} size={96} />
-                </div>
-                <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{viewProfile.name}</div>
-                <div style={{ fontSize:13,color:"#6b8f71" }}>{viewProfile.age}歳 · {viewProfile.gender} · {viewProfile.location}</div>
+      <div style={S.app}><div style={S.page}>
+        <div style={S.bar}>
+          <button style={S.ghost} onClick={() => { setViewProfile(null); setScreen("browse"); }}>← 戻る</button>
+          <span style={S.barTitle}>{viewProfile.name}さん</span>
+          <div style={{ width:60 }} />
+        </div>
+        <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
+          <div style={S.card}>
+            <div style={{ textAlign:"center",marginBottom:16 }}>
+              <div style={{ display:"flex",justifyContent:"center",marginBottom:8 }}>
+                <AvatarImg avatarUrl={viewProfile.avatarUrl} emoji={viewProfile.avatar} size={96} />
               </div>
-              <div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:12 }}>
-                {viewProfile.severity && <span style={S.badge}>{viewProfile.severity}</span>}
-                {viewProfile.skinType && <span style={S.badge}>{viewProfile.skinType}</span>}
-                {viewProfile.yearsWithAtopy && <span style={{ ...S.badge,background:"#e8f5e9" }}>歴{viewProfile.yearsWithAtopy}年</span>}
-              </div>
-              {viewProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{viewProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-              {viewProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{viewProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-              {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
-              {viewProfile.uid !== currentUser.uid && !matches[viewProfile.uid] && (
-                <>
-                  <button onClick={async () => { const r = await sendLike(viewProfile); if (r.type==="match") showToast("🎉 マッチしました！チャットできます"); else if (r.type==="like") showToast("🌿 共感しました｜お互いに共感でチャットできます"); }}
-                    style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,fontSize:14,fontWeight:700,cursor:"pointer",
-                      background: myLikes[viewProfile.uid] ? "#d4edda" : "#f0f0f0",
-                      color: myLikes[viewProfile.uid] ? "#2e7d32" : "#666",
-                      border: myLikes[viewProfile.uid] ? "1px solid #4caf50" : "1px solid #ccc"
-                    }}>
-                    {myLikes[viewProfile.uid] ? "🌿 共感済" : "🌿 共感する"}
-                  </button>
-                </>
-              )}
-              {matches[viewProfile.uid] && (
-                <>
-                  <div style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,fontSize:14,fontWeight:700,textAlign:"center",
-                    background:"#ffebee",color:"#e57373",border:"1px solid #f48fb1" }}>
-                    ❤️ マッチ済
-                  </div>
-                  <button onClick={() => { setChatTarget(matches[viewProfile.uid]); setScreen("chat"); }}
-                    style={{ ...S.btn,marginTop:8,padding:"12px 0",fontSize:14 }}>
-                    💬 チャット
-                  </button>
-                </>
-              )}
+              <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{viewProfile.name}</div>
+              <div style={{ fontSize:13,color:"#6b8f71" }}>{viewProfile.age}歳 · {viewProfile.gender} · {viewProfile.location}</div>
             </div>
-            {tl.length > 0 && (
-              <div style={S.card}>
-                <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>📝 タイムライン</div>
-                <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-                  {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
-                    <TimelinePost key={t.id} post={t} ownerUid={viewProfile.uid} currentUser={currentUser}
-                      onClickUser={handleClickUser} canDelete={false}
-                      highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
-                  ))}
-                  {tl.length > (tlPage+1)*PAGE_SIZE && (
-                    <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[viewProfile.uid]:(prev[viewProfile.uid]||0)+1 }))}
-                      style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"8px 0",fontSize:13,fontWeight:700,cursor:"pointer" }}>
-                      もっと見る
-                    </button>
-                  )}
-                </div>
-              </div>
+            <div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:12 }}>
+              {viewProfile.severity && <span style={S.badge}>{viewProfile.severity}</span>}
+              {viewProfile.skinType && <span style={S.badge}>{viewProfile.skinType}</span>}
+              {viewProfile.yearsWithAtopy && <span style={{ ...S.badge,background:"#e8f5e9" }}>歴{viewProfile.yearsWithAtopy}年</span>}
+            </div>
+            {viewProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{viewProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+            {viewProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{viewProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+            {viewProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{viewProfile.bio}</p>}
+            {viewProfile.uid !== currentUser.uid && !matches[viewProfile.uid] && (
+              <button onClick={async () => { const r = await sendLike(viewProfile); if (r.type==="match") showToast("🎉 マッチしました！"); else if (r.type==="like") showToast("🌿 共感しました"); }}
+                style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,fontSize:14,fontWeight:700,cursor:"pointer",
+                  background: myLikes[viewProfile.uid] ? "#d4edda" : "#f0f0f0",
+                  color: myLikes[viewProfile.uid] ? "#2e7d32" : "#666",
+                  border: myLikes[viewProfile.uid] ? "1px solid #4caf50" : "1px solid #ccc" }}>
+                {myLikes[viewProfile.uid] ? "🌿 共感済" : "🌿 共感する"}
+              </button>
+            )}
+            {matches[viewProfile.uid] && (
+              <>
+                <div style={{ width:"100%",marginTop:16,padding:"12px 0",borderRadius:14,fontSize:14,fontWeight:700,textAlign:"center",background:"#ffebee",color:"#e57373",border:"1px solid #f48fb1" }}>❤️ マッチ済</div>
+                <button onClick={() => { setChatTarget(matches[viewProfile.uid]); setScreen("chat"); }} style={{ ...S.btn,marginTop:8,padding:"12px 0",fontSize:14 }}>💬 チャット</button>
+              </>
             )}
           </div>
-          {toastEl}
+          {tl.length > 0 && (
+            <div style={S.card}>
+              <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>📝 タイムライン</div>
+              <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
+                  <TimelinePost key={t.id} post={t} ownerUid={viewProfile.uid} currentUser={currentUser}
+                    onClickUser={handleClickUser} canDelete={false}
+                    highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
+                ))}
+                {tl.length > (tlPage+1)*PAGE_SIZE && (
+                  <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[viewProfile.uid]:(prev[viewProfile.uid]||0)+1 }))}
+                    style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"8px 0",fontSize:13,fontWeight:700,cursor:"pointer" }}>
+                    もっと見る
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+        {toastEl}
+      </div></div>
     );
   }
 
@@ -579,27 +593,23 @@ export default function App() {
   );
 
   if (verificationSent) return (
-    <div style={S.app}>
-      <div style={{ width:"100%",maxWidth:400,padding:"48px 20px" }}>
-        <div style={{ textAlign:"center",marginBottom:28 }}>
-          <div style={{ fontSize:52 }}>🌿</div>
-          <h1 style={{ fontSize:30,fontWeight:800,color:"#3d6b4f",margin:"4px 0 0" }}>AtopiMatch</h1>
-        </div>
-        <div style={S.card}>
-          <div style={{ textAlign:"center",marginBottom:20 }}>
-            <div style={{ fontSize:48,marginBottom:12 }}>📧</div>
-            <h2 style={{ fontSize:18,fontWeight:800,color:"#3d6b4f",margin:"0 0 8px" }}>確認メールを送りました</h2>
-            <p style={{ color:"#6b8f71",fontSize:14,lineHeight:1.7 }}>
-              <strong>{authEmail}</strong> に確認メールを送りました。<br/>
-              メール内のリンクをクリックしてから、ログインしてください。
-            </p>
-          </div>
-          <button style={S.btn} onClick={() => { setVerificationSent(false); setAuthMode("login"); }}>ログイン画面へ</button>
-        </div>
+    <div style={S.app}><div style={{ width:"100%",maxWidth:400,padding:"48px 20px" }}>
+      <div style={{ textAlign:"center",marginBottom:28 }}>
+        <div style={{ fontSize:52 }}>🌿</div>
+        <h1 style={{ fontSize:30,fontWeight:800,color:"#3d6b4f",margin:"4px 0 0" }}>AtopiMatch</h1>
       </div>
-    </div>
+      <div style={S.card}>
+        <div style={{ textAlign:"center",marginBottom:20 }}>
+          <div style={{ fontSize:48,marginBottom:12 }}>📧</div>
+          <h2 style={{ fontSize:18,fontWeight:800,color:"#3d6b4f",margin:"0 0 8px" }}>確認メールを送りました</h2>
+          <p style={{ color:"#6b8f71",fontSize:14,lineHeight:1.7 }}><strong>{authEmail}</strong> に確認メールを送りました。<br/>メール内のリンクをクリックしてから、ログインしてください。</p>
+        </div>
+        <button style={S.btn} onClick={() => { setVerificationSent(false); setAuthMode("login"); }}>ログイン画面へ</button>
+      </div>
+    </div></div>
   );
 
+  // ── auth ─────────────────────────────────────────────────
   if (screen === "auth") return (
     <div style={S.app}>
       {tutorialEl}
@@ -620,408 +630,389 @@ export default function App() {
           <input style={{ ...S.input,marginBottom:12 }} type="password" placeholder="••••••••" value={authPassword} onChange={e => setAuthPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && handleAuth()} />
           {authError && <div style={S.errorMsg}>{authError}</div>}
           <button style={S.btn} onClick={handleAuth} disabled={authLoading}>{authLoading?"処理中...":authMode==="login"?"ログイン":"アカウントを作成"}</button>
-          <button onClick={() => setShowTutorial(true)}
-            style={{ width:"100%",marginTop:10,background:"transparent",border:"none",color:"#52a875",fontSize:13,cursor:"pointer" }}>
-            使い方を見る 🌿
-          </button>
+          <button onClick={() => setShowTutorial(true)} style={{ width:"100%",marginTop:10,background:"transparent",border:"none",color:"#52a875",fontSize:13,cursor:"pointer" }}>使い方を見る 🌿</button>
         </div>
       </div>
     </div>
   );
 
+  // ── register ─────────────────────────────────────────────
   if (screen === "register") return (
-    <div style={S.app}>
-      <div style={S.page}>
-        <div style={S.bar}><span style={S.barTitle}>🌿 プロフィール作成</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
-        <div style={{ padding:16,overflowY:"auto",flex:1 }}>
-          <div style={S.card}>
+    <div style={S.app}><div style={S.page}>
+      <div style={S.bar}><span style={S.barTitle}>🌿 プロフィール作成</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
+      <div style={{ padding:16,overflowY:"auto",flex:1 }}>
+        <div style={S.card}>
 
-            {/* ── アバター画像アップロード */}
-            <label style={S.label}>アバター画像（任意・1MB以下）</label>
-            <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:14,padding:"14px 0",background:"#f0f7f2",borderRadius:12 }}>
-              <AvatarImg url={avatarPreview || profileForm.avatarUrl} size={88} />
-              <label style={{ cursor:"pointer",background:"#fff",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 16px",fontSize:12,fontWeight:700,color:"#52a875" }}>
-                📷 画像を選択
-                <input type="file" accept="image/*" style={{ display:"none" }}
-                  onChange={e => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    if (file.size > 1024 * 1024) { alert("画像は1MB以下にしてください"); return; }
-                    setAvatarFile(file);
-                    setAvatarPreview(URL.createObjectURL(file));
-                    e.target.value = "";
-                  }} />
-              </label>
-            </div>
+          {/* ────────────────────────────────────────
+              アバター選択エリア
+          ──────────────────────────────────────── */}
+          <label style={S.label}>アバター</label>
 
-            <label style={S.label}>または絵文字アバターを選択</label>
-            <div style={{ ...S.chips,marginBottom:14 }}>
-              {AVATARS.map(a => <button key={a} onClick={() => setProfileForm(f => ({ ...f,avatar:a }))} style={{ fontSize:24,background:profileForm.avatar===a?"#e8f5e9":"#f0f7f2",border:profileForm.avatar===a?"2px solid #52a875":"2px solid #c8e6c9",borderRadius:12,padding:"4px 8px",cursor:"pointer" }}>{a}</button>)}
+          {/* プレビュー + 現在の状態表示 */}
+          <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:10,marginBottom:16,padding:"16px 0",background:"#f0f7f2",borderRadius:12 }}>
+            {/* 選択中の状態をリアルタイムでプレビュー */}
+            {avatarPreview
+              ? <img src={avatarPreview} alt="プレビュー" style={{ width:88,height:88,borderRadius:"50%",objectFit:"cover",border:"2px solid #52a875" }} />
+              : <AvatarImg avatarUrl={profileForm.avatarUrl} emoji={profileForm.avatar} size={88} />
+            }
+            {/* どちらが有効か表示 */}
+            <div style={{ fontSize:11,color:"#6b8f71",fontWeight:700 }}>
+              {avatarPreview ? "📷 画像を選択中（未保存）"
+                : profileForm.avatarUrl ? "📷 画像アバター"
+                : `${profileForm.avatar} 絵文字アバター`}
             </div>
-
-            <label style={S.label}>ニックネーム</label>
-            <input style={{ ...S.input,marginBottom:12 }} placeholder="さくら" value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f,name:e.target.value }))} />
-            <div style={{ display:"flex",gap:12,marginBottom:12 }}>
-              <div style={{ flex:1 }}>
-                <label style={S.label}>年齢（18歳以上）</label>
-                <input style={S.input} type="number" min="18" max="100" placeholder="25" value={profileForm.age}
-                  onChange={e => { const v=e.target.value; if(v===""||Number(v)>=18) setProfileForm(f => ({ ...f,age:v })); }} />
-              </div>
-              <div style={{ flex:1 }}>
-                <label style={S.label}>地域</label>
-                <input style={S.input} placeholder="東京" value={profileForm.location} onChange={e => setProfileForm(f => ({ ...f,location:e.target.value }))} />
-              </div>
-            </div>
-            <label style={S.label}>性別</label>
-            <div style={{ ...S.chips,marginBottom:12 }}>
-              {GENDERS.map(g => <button key={g} style={profileForm.gender===g?S.chipOn:S.chipOff} onClick={() => setProfileForm(f => ({ ...f,gender:g }))}>{g}</button>)}
-            </div>
-            <label style={S.label}>症状の重さ</label>
-            <div style={{ ...S.chips,marginBottom:12 }}>{SEVERITY.map(s => <button key={s} style={profileForm.severity===s?S.chipOn:S.chipOff} onClick={() => setProfileForm(f => ({ ...f,severity:s }))}>{s}</button>)}</div>
-            <label style={S.label}>肌タイプ</label>
-            <div style={{ ...S.chips,marginBottom:12 }}>{SKIN_CONDITIONS.map(s => <button key={s} style={profileForm.skinType===s?S.chipOn:S.chipOff} onClick={() => setProfileForm(f => ({ ...f,skinType:s }))}>{s}</button>)}</div>
-            <label style={S.label}>悪化因子（複数可）</label>
-            <div style={{ ...S.chips,marginBottom:12 }}>{TRIGGERS.map(t => <button key={t} style={profileForm.triggers.includes(t)?S.chipOn:S.chipOff} onClick={() => toggleArr("triggers",t)}>{t}</button>)}</div>
-            <label style={S.label}>治療法（複数可）</label>
-            <div style={{ ...S.chips,marginBottom:12 }}>{TREATMENTS.map(t => <button key={t} style={profileForm.treatments.includes(t)?S.chipOn:S.chipOff} onClick={() => toggleArr("treatments",t)}>{t}</button>)}</div>
-            <label style={S.label}>アトピー歴（年）</label>
-            <input style={{ ...S.input,marginBottom:12 }} type="number" placeholder="10" value={profileForm.yearsWithAtopy} onChange={e => setProfileForm(f => ({ ...f,yearsWithAtopy:e.target.value }))} />
-            <label style={S.label}>自己紹介</label>
-            <textarea style={{ ...S.input,height:80,resize:"vertical",marginBottom:16 }} placeholder="アトピーと向き合いながら毎日楽しく過ごしています..." value={profileForm.bio} onChange={e => setProfileForm(f => ({ ...f,bio:e.target.value }))} />
-            <button style={S.btn} onClick={submitProfile}>登録する</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (screen === "browse") return (
-    <div style={S.app}>
-      <div style={S.page}>
-        <div style={S.bar}><span style={S.barTitle}>🌿 自分と似ている人</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
-        <div style={{ flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:12 }}>
-          {/* フィルターUI */}
-          <div style={{ display:"flex",gap:8,marginBottom:4 }}>
-            <button onClick={() => setFilterMode("all")}
-              style={{ background:filterMode==="all"?"#52a875":"#f0f0f0",color:filterMode==="all"?"#fff":"#666",border:filterMode==="all"?"none":"1px solid #ccc",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-              すべて
-            </button>
-            <button onClick={() => setFilterMode("liked")}
-              style={{ background:filterMode==="liked"?"#52a875":"#f0f0f0",color:filterMode==="liked"?"#fff":"#666",border:filterMode==="liked"?"2px solid #2e7d32":"1px solid #ccc",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:800,cursor:"pointer" }}>
-              共感済み
-            </button>
-          </div>
-          {filteredProfiles.length === 0 ? (
-            <div style={S.empty}>
-              <div style={{ fontSize:52 }}>🌿</div>
-              {filterMode === "liked" ? (
-                <>
-                  <h3 style={{ color:"#3d6b4f",marginTop:12 }}>共感したユーザーはいません</h3>
-                  <p style={{ color:"#6b8f71",fontSize:13 }}>気になる人に共感してみましょう</p>
-                </>
-              ) : (
-                <>
-                  <h3 style={{ color:"#3d6b4f",marginTop:12 }}>表示できるユーザーがいません</h3>
-                  <p style={{ color:"#6b8f71",fontSize:13 }}>すでに全員とマッチ済かもしれません</p>
-                </>
-              )}
-            </div>
-          ) : filteredProfiles.map(p => {
-            const isExpanded = expandedUid === p.uid;
-            const tl = profileTimelines[p.uid] || [];
-            const tlPage = profileTimelinePages[p.uid] || 0;
-            return (
-              <div key={p.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
-                <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px" }} onClick={() => toggleExpand(p.uid)}>
-                  {/* ── アバター画像（browse） */}
-                  <AvatarImg url={p.avatarUrl} size={50} />
-                  <div style={{ flex:1,minWidth:0 }}>
-                    <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{p.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{p.age}歳</span></div>
-                    <div style={{ fontSize:11,color:"#6b8f71" }}>{p.location}{p.gender?" · "+p.gender:""} · {p.severity}</div>
-                    {p.commons?.length > 0 && (
-                      <div style={{ fontSize:11,color:"#52a875",marginTop:3,fontWeight:700 }}>
-                        🌿 共通点：{p.commons.slice(0,2).join("・")}{p.commons.length > 2 ? ` +${p.commons.length - 2}` : ""}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
-                    <button onClick={async e => { e.stopPropagation(); const r = await sendLike(p); if (r.type==="match") showToast("🎉 マッチしました！チャットできます"); else if (r.type==="like") showToast("🌿 共感しました｜お互いに共感でチャットできます"); }}
-                      style={{
-                        background: matches[p.uid] ? "#ffebee" : myLikes[p.uid] ? "#d4edda" : "#f0f0f0",
-                        color: matches[p.uid] ? "#e57373" : myLikes[p.uid] ? "#2e7d32" : "#666",
-                        border: matches[p.uid] ? "1px solid #f48fb1" : myLikes[p.uid] ? "1px solid #4caf50" : "1px solid #ccc",
-                        borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:matches[p.uid]?"default":"pointer",
-                        pointerEvents: matches[p.uid] ? "none" : "auto"
-                      }}>
-                      {matches[p.uid] ? "❤️ マッチ済" : myLikes[p.uid] ? "🌿 共感済" : "🌿 共感する"}
-                    </button>
-                    {matches[p.uid] && (
-                      <button onClick={e => { e.stopPropagation(); setChatTarget(matches[p.uid]); setScreen("chat"); }}
-                        style={{ background:"#52a875",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                        💬 チャット
-                      </button>
-                    )}
-                    <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
-                  </div>
-                </div>
-                {isExpanded && (
-                  <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
-                    {p.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{p.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-                    {p.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{p.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-                    {p.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:10,background:"#f0f7f2",borderRadius:10 }}>{p.bio}</p>}
-                    {tl.length > 0 && (
-                      <>
-                        <div style={S.secLabel}>📝 タイムライン</div>
-                        <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                          {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
-                            <TimelinePost key={t.id} post={t} ownerUid={p.uid} currentUser={currentUser}
-                              onClickUser={handleClickUser} canDelete={false}
-                              highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
-                          ))}
-                          {tl.length > (tlPage+1)*PAGE_SIZE && (
-                            <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[p.uid]:(prev[p.uid]||0)+1 }))}
-                              style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 0",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                              もっと見る
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        <div style={S.nav}>
-          <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>🔍 探す</button>
-          <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ ({Object.keys(matches).length})</button>
-          <button style={S.navBtn} onClick={() => setScreen("mypage")}>
-            👤 マイページ{unreadCount > 0 ? <span style={{ marginLeft:4,background:"#e57373",color:"#fff",borderRadius:"50%",fontSize:10,padding:"1px 5px",fontWeight:700 }}>{unreadCount}</span> : ""}
-          </button>
-        </div>
-        {tutorialEl}{toastEl}
-      </div>
-    </div>
-  );
-
-  if (screen === "matches") return (
-    <div style={S.app}>
-      <div style={S.page}>
-        <div style={S.bar}><span style={S.barTitle}>💚 マッチ一覧</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
-        <div style={{ flex:1,overflowY:"auto",padding:16 }}>
-          {Object.keys(matches).length === 0 ? (
-            <div style={S.empty}>
-              <div style={{ fontSize:48 }}>💚</div>
-              <p style={{ color:"#3d6b4f",fontSize:15,fontWeight:800,marginTop:12 }}>まだマッチがありません</p>
-              <p style={{ color:"#6b8f71",fontSize:13,marginTop:6 }}>気になる人にいいねしてみましょう</p>
-              <button style={{ ...S.btn,width:"auto",padding:"12px 28px",marginTop:16 }} onClick={() => setScreen("browse")}>探しに行く 🌿</button>
-            </div>
-          ) : (
-            <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-              {Object.values(matches).map(m => {
-                const isExpanded = expandedUid === m.uid;
-                const tl = profileTimelines[m.uid] || [];
-                const tlPage = profileTimelinePages[m.uid] || 0;
-                const { commons: mCommons } = myProfile ? calcScore(myProfile, m) : { commons: [] };
-                return (
-                  <div key={m.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
-                    <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }} onClick={() => toggleExpand(m.uid)}>
-                      {/* ── アバター画像（matches） */}
-                      <AvatarImg url={m.avatarUrl} size={50} />
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
-                        <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location}{m.gender?" · "+m.gender:""} · {m.severity}</div>
-                        {mCommons.length > 0 && (
-                          <div style={{ fontSize:11,color:"#52a875",marginTop:2,fontWeight:700 }}>
-                            🌿 共通点：{mCommons.slice(0,2).join("・")}{mCommons.length > 2 ? ` +${mCommons.length - 2}` : ""}
-                          </div>
-                        )}
-                        <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ · {isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
-                      </div>
-                      <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:2 }}>
-                        <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }}
-                          style={{ background:"#52a875",border:"none",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",color:"#fff" }}>
-                          💬 チャット
-                        </button>
-                        {unreadChats[m.uid] && <span style={{ fontSize:10,color:"#e57373",fontWeight:700 }}>🔴 新着あり</span>}
-                      </div>
-                    </div>
-                    {isExpanded && (
-                      <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
-                        {m.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{m.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-                        {m.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{m.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-                        {m.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:10,background:"#f0f7f2",borderRadius:10 }}>{m.bio}</p>}
-                        {tl.length > 0 && (
-                          <>
-                            <div style={S.secLabel}>📝 タイムライン</div>
-                            <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                              {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => (
-                                <TimelinePost key={t.id} post={t} ownerUid={m.uid} currentUser={currentUser}
-                                  onClickUser={handleClickUser} canDelete={false}
-                                  highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
-                              ))}
-                              {tl.length > (tlPage+1)*PAGE_SIZE && (
-                                <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[m.uid]:(prev[m.uid]||0)+1 }))}
-                                  style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 0",fontSize:12,fontWeight:700,cursor:"pointer" }}>
-                                  もっと見る
-                                </button>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        <div style={S.nav}>
-          <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
-          <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>💚 マッチ</button>
-          <button style={S.navBtn} onClick={() => setScreen("mypage")}>👤 マイページ</button>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (screen === "mypage") return (
-    <div style={S.app}>
-      <div style={S.page}>
-        <div style={S.bar}><span style={S.barTitle}>👤 マイページ</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
-        <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
-          {notifications.length === 0 && (
-            <div style={{ ...S.card,textAlign:"center",padding:"20px 24px" }}>
-              <div style={{ fontSize:32,marginBottom:8 }}>🔔</div>
-              <p style={{ color:"#6b8f71",fontSize:13,fontWeight:700 }}>まだ通知はありません</p>
-              <p style={{ color:"#a8c5b0",fontSize:12,marginTop:4 }}>いいねやコメントが届くとここに表示されます</p>
-            </div>
-          )}
-          {notifications.length > 0 && (
-            <div style={S.card}>
-              <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
-              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                {notifications.slice(0, visibleCount).map(n => (
-                  <button key={n.id} onClick={() => handleNotificationClick(n)}
-                    style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:n.read?"#f0f7f2":"#e8f5e9",borderRadius:12,border:n.read?"none":"1.5px solid #c8e6c9",cursor:"pointer",width:"100%",textAlign:"left" }}>
-                    <span style={{ fontSize:22,flexShrink:0,position:"relative" }}>
-                      {n.fromUserAvatar}
-                      {!n.read && <span style={{ position:"absolute",top:-2,right:-2,width:8,height:8,background:"#e57373",borderRadius:"50%",display:"block" }} />}
-                    </span>
-                    <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
-                      <strong>{n.fromUserName}</strong>さんが
-                      {n.type === "profile_like" || n.type === "like"
-                        ? "🌿 あなたに共感しています → 見てみる"
-                        : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
-                      <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
-                    </div>
-                    <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
-                  </button>
-                ))}
-                {notifications.length > visibleCount && (
-                  <button onClick={() => setVisibleCount(v => v + 5)}
-                    style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"8px 0",fontSize:13,fontWeight:700,cursor:"pointer" }}>
-                    もっと見る
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-          {myProfile && (
-            <div style={S.card}>
-              <div style={{ textAlign:"center",marginBottom:16 }}>
-                {/* ── アバター画像（マイページ）+ 変更ボタン */}
-                <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:8 }}>
-                  <AvatarImg url={avatarPreview || myProfile.avatarUrl} size={96} />
-                  <label style={{ cursor:"pointer",background:"#f0f7f2",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:700,color:"#52a875" }}>
-                    📷 画像を変更
-                    <input type="file" accept="image/*" style={{ display:"none" }}
-                      onChange={async e => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-                        if (file.size > 1024 * 1024) { alert("画像は1MB以下にしてください"); return; }
-                        setAvatarPreview(URL.createObjectURL(file));
-                        e.target.value = "";
-                        setAvatarSaving(true);
-                        try {
-                          const url = await uploadAvatar(currentUser.uid, file);
-                          setMyProfile(prev => ({ ...prev, avatarUrl: url }));
-                          setAvatarPreview(null);
-                          showToast("アバターを更新しました 🌿");
-                        } catch (err) {
-                          alert(err.message);
-                          setAvatarPreview(null);
-                        } finally { setAvatarSaving(false); }
-                      }} />
-                  </label>
-                  {avatarSaving && <div style={{ fontSize:12,color:"#52a875" }}>保存中...</div>}
-                </div>
-                <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{myProfile.name}</div>
-                <div style={{ fontSize:13,color:"#6b8f71" }}>{myProfile.age}歳 · {myProfile.gender} · {myProfile.location}</div>
-              </div>
-              <div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:12 }}>
-                {myProfile.severity && <span style={S.badge}>{myProfile.severity}</span>}
-                {myProfile.skinType && <span style={S.badge}>{myProfile.skinType}</span>}
-                {myProfile.yearsWithAtopy && <span style={{ ...S.badge,background:"#e8f5e9" }}>歴{myProfile.yearsWithAtopy}年</span>}
-              </div>
-              {myProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{myProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-              {myProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{myProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
-              {myProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{myProfile.bio}</p>}
-              <button style={{ ...S.btn,marginTop:16 }} onClick={() => { setProfileForm(myProfile); setAvatarPreview(null); setAvatarFile(null); setScreen("register"); }}>プロフィールを編集</button>
-            </div>
-          )}
-          <div style={S.card}>
-            <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>📝 タイムライン</div>
-            <textarea style={{ ...S.input,height:70,resize:"vertical",marginBottom:8 }} placeholder="今日の体調や日常を投稿しましょう..." value={timelineInput} onChange={e => setTimelineInput(e.target.value)} />
-            {/* 画像プレビュー */}
-            {imagePreview && (
-              <div style={{ position:"relative",marginBottom:8 }}>
-                <img src={imagePreview} alt="preview" style={{ width:"100%",maxHeight:200,objectFit:"cover",borderRadius:10 }} />
-                <button onClick={() => { setImageFile(null); setImagePreview(null); }}
-                  style={{ position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.5)",color:"#fff",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:14,lineHeight:"24px",textAlign:"center" }}>✕</button>
-              </div>
-            )}
-            {/* 画像選択ボタン */}
-            <label style={{ display:"block",marginBottom:8,cursor:"pointer" }}>
+            {/* 画像選択 */}
+            <label style={{ cursor:"pointer",background:"#fff",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 16px",fontSize:12,fontWeight:700,color:"#52a875" }}>
+              📷 画像を選択（1MB以下）
               <input type="file" accept="image/*" style={{ display:"none" }}
                 onChange={e => {
                   const file = e.target.files[0];
                   if (!file) return;
-                  setImageFile(file);
-                  setImagePreview(URL.createObjectURL(file));
+                  if (file.size > 1024 * 1024) { alert("画像は1MB以下にしてください"); return; }
+                  setAvatarFile(file);
+                  setAvatarPreview(URL.createObjectURL(file));
                   e.target.value = "";
                 }} />
-              <span style={{ display:"inline-block",background:"#f0f7f2",border:"1.5px solid #c8e6c9",color:"#52a875",borderRadius:10,padding:"6px 14px",fontSize:12,fontWeight:700 }}>
-                📷 画像を追加
-              </span>
             </label>
-            <button style={S.btn} onClick={postTimeline} disabled={timelineLoading}>{timelineLoading?"投稿中...":"投稿する"}</button>
-            <div style={{ marginTop:16,display:"flex",flexDirection:"column",gap:10 }}>
-              {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
-              {myTimeline.slice(0,(timelinePage+1)*PAGE_SIZE).map(t => (
-                <TimelinePost key={t.id} post={t} ownerUid={currentUser.uid} currentUser={currentUser}
-                  onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id, t.imagePath)}
-                  highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
-              ))}
-              {myTimeline.length > (timelinePage+1)*PAGE_SIZE && (
-                <button onClick={() => setTimelinePage(p => p+1)}
-                  style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"8px 0",fontSize:13,fontWeight:700,cursor:"pointer",marginTop:4 }}>
-                  もっと見る
+            {/* 画像選択中はキャンセルボタン */}
+            {(avatarFile || avatarPreview) && (
+              <button onClick={() => { setAvatarFile(null); setAvatarPreview(null); setProfileForm(f => ({ ...f, avatarUrl: "" })); }}
+                style={{ background:"none",border:"none",color:"#e57373",fontSize:12,cursor:"pointer",fontWeight:700 }}>
+                ✕ 画像を取り消す
+              </button>
+            )}
+          </div>
+
+          {/* 絵文字グリッド */}
+          <label style={S.label}>または絵文字を選択</label>
+          <div style={{ ...S.chips,marginBottom:14 }}>
+            {AVATARS.map(a => (
+              <button key={a}
+                onClick={() => {
+                  // 絵文字を選ぶと画像選択をリセット
+                  setAvatarFile(null);
+                  setAvatarPreview(null);
+                  setProfileForm(f => ({ ...f, avatar: a, avatarUrl: "" }));
+                }}
+                style={{
+                  fontSize:24,
+                  background: !avatarFile && !avatarPreview && profileForm.avatar === a ? "#e8f5e9" : "#f0f7f2",
+                  border: !avatarFile && !avatarPreview && profileForm.avatar === a ? "2px solid #52a875" : "2px solid #c8e6c9",
+                  borderRadius:12, padding:"4px 8px", cursor:"pointer"
+                }}>
+                {a}
+              </button>
+            ))}
+          </div>
+
+          <label style={S.label}>ニックネーム</label>
+          <input style={{ ...S.input,marginBottom:12 }} placeholder="さくら" value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f,name:e.target.value }))} />
+          <div style={{ display:"flex",gap:12,marginBottom:12 }}>
+            <div style={{ flex:1 }}>
+              <label style={S.label}>年齢（18歳以上）</label>
+              <input style={S.input} type="number" min="18" max="100" placeholder="25" value={profileForm.age}
+                onChange={e => { const v=e.target.value; if(v===""||Number(v)>=18) setProfileForm(f => ({ ...f,age:v })); }} />
+            </div>
+            <div style={{ flex:1 }}>
+              <label style={S.label}>地域</label>
+              <input style={S.input} placeholder="東京" value={profileForm.location} onChange={e => setProfileForm(f => ({ ...f,location:e.target.value }))} />
+            </div>
+          </div>
+          <label style={S.label}>性別</label>
+          <div style={{ ...S.chips,marginBottom:12 }}>{GENDERS.map(g => <button key={g} style={profileForm.gender===g?S.chipOn:S.chipOff} onClick={() => setProfileForm(f => ({ ...f,gender:g }))}>{g}</button>)}</div>
+          <label style={S.label}>症状の重さ</label>
+          <div style={{ ...S.chips,marginBottom:12 }}>{SEVERITY.map(s => <button key={s} style={profileForm.severity===s?S.chipOn:S.chipOff} onClick={() => setProfileForm(f => ({ ...f,severity:s }))}>{s}</button>)}</div>
+          <label style={S.label}>肌タイプ</label>
+          <div style={{ ...S.chips,marginBottom:12 }}>{SKIN_CONDITIONS.map(s => <button key={s} style={profileForm.skinType===s?S.chipOn:S.chipOff} onClick={() => setProfileForm(f => ({ ...f,skinType:s }))}>{s}</button>)}</div>
+          <label style={S.label}>悪化因子（複数可）</label>
+          <div style={{ ...S.chips,marginBottom:12 }}>{TRIGGERS.map(t => <button key={t} style={profileForm.triggers.includes(t)?S.chipOn:S.chipOff} onClick={() => toggleArr("triggers",t)}>{t}</button>)}</div>
+          <label style={S.label}>治療法（複数可）</label>
+          <div style={{ ...S.chips,marginBottom:12 }}>{TREATMENTS.map(t => <button key={t} style={profileForm.treatments.includes(t)?S.chipOn:S.chipOff} onClick={() => toggleArr("treatments",t)}>{t}</button>)}</div>
+          <label style={S.label}>アトピー歴（年）</label>
+          <input style={{ ...S.input,marginBottom:12 }} type="number" placeholder="10" value={profileForm.yearsWithAtopy} onChange={e => setProfileForm(f => ({ ...f,yearsWithAtopy:e.target.value }))} />
+          <label style={S.label}>自己紹介</label>
+          <textarea style={{ ...S.input,height:80,resize:"vertical",marginBottom:16 }} placeholder="アトピーと向き合いながら毎日楽しく過ごしています..." value={profileForm.bio} onChange={e => setProfileForm(f => ({ ...f,bio:e.target.value }))} />
+          <button style={S.btn} onClick={submitProfile}>登録する</button>
+        </div>
+      </div>
+    </div></div>
+  );
+
+  // ── browse ───────────────────────────────────────────────
+  if (screen === "browse") return (
+    <div style={S.app}><div style={S.page}>
+      <div style={S.bar}><span style={S.barTitle}>🌿 自分と似ている人</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
+      <div style={{ flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:12 }}>
+        <div style={{ display:"flex",gap:8,marginBottom:4 }}>
+          <button onClick={() => setFilterMode("all")} style={{ background:filterMode==="all"?"#52a875":"#f0f0f0",color:filterMode==="all"?"#fff":"#666",border:filterMode==="all"?"none":"1px solid #ccc",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>すべて</button>
+          <button onClick={() => setFilterMode("liked")} style={{ background:filterMode==="liked"?"#52a875":"#f0f0f0",color:filterMode==="liked"?"#fff":"#666",border:filterMode==="liked"?"2px solid #2e7d32":"1px solid #ccc",borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:800,cursor:"pointer" }}>共感済み</button>
+        </div>
+        {filteredProfiles.length === 0 ? (
+          <div style={S.empty}>
+            <div style={{ fontSize:52 }}>🌿</div>
+            {filterMode === "liked"
+              ? <><h3 style={{ color:"#3d6b4f",marginTop:12 }}>共感したユーザーはいません</h3><p style={{ color:"#6b8f71",fontSize:13 }}>気になる人に共感してみましょう</p></>
+              : <><h3 style={{ color:"#3d6b4f",marginTop:12 }}>表示できるユーザーがいません</h3><p style={{ color:"#6b8f71",fontSize:13 }}>すでに全員とマッチ済かもしれません</p></>}
+          </div>
+        ) : filteredProfiles.map(p => {
+          const isExpanded = expandedUid === p.uid;
+          const tl = profileTimelines[p.uid] || [];
+          const tlPage = profileTimelinePages[p.uid] || 0;
+          return (
+            <div key={p.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
+              <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px" }} onClick={() => toggleExpand(p.uid)}>
+                {/* 画像→絵文字の順で自動判定して表示 */}
+                <AvatarImg avatarUrl={p.avatarUrl} emoji={p.avatar} size={50} />
+                <div style={{ flex:1,minWidth:0 }}>
+                  <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{p.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{p.age}歳</span></div>
+                  <div style={{ fontSize:11,color:"#6b8f71" }}>{p.location}{p.gender?" · "+p.gender:""} · {p.severity}</div>
+                  {p.commons?.length > 0 && <div style={{ fontSize:11,color:"#52a875",marginTop:3,fontWeight:700 }}>🌿 共通点：{p.commons.slice(0,2).join("・")}{p.commons.length > 2 ? ` +${p.commons.length - 2}` : ""}</div>}
+                </div>
+                <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
+                  <button onClick={async e => { e.stopPropagation(); const r = await sendLike(p); if (r.type==="match") showToast("🎉 マッチしました！チャットできます"); else if (r.type==="like") showToast("🌿 共感しました｜お互いに共感でチャットできます"); }}
+                    style={{ background: matches[p.uid] ? "#ffebee" : myLikes[p.uid] ? "#d4edda" : "#f0f0f0", color: matches[p.uid] ? "#e57373" : myLikes[p.uid] ? "#2e7d32" : "#666", border: matches[p.uid] ? "1px solid #f48fb1" : myLikes[p.uid] ? "1px solid #4caf50" : "1px solid #ccc", borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:matches[p.uid]?"default":"pointer", pointerEvents: matches[p.uid] ? "none" : "auto" }}>
+                    {matches[p.uid] ? "❤️ マッチ済" : myLikes[p.uid] ? "🌿 共感済" : "🌿 共感する"}
+                  </button>
+                  {matches[p.uid] && <button onClick={e => { e.stopPropagation(); setChatTarget(matches[p.uid]); setScreen("chat"); }} style={{ background:"#52a875",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>💬 チャット</button>}
+                  <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
+                </div>
+              </div>
+              {isExpanded && (
+                <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
+                  {p.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{p.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+                  {p.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{p.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+                  {p.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:10,background:"#f0f7f2",borderRadius:10 }}>{p.bio}</p>}
+                  {tl.length > 0 && (<>
+                    <div style={S.secLabel}>📝 タイムライン</div>
+                    <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                      {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => <TimelinePost key={t.id} post={t} ownerUid={p.uid} currentUser={currentUser} onClickUser={handleClickUser} canDelete={false} highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />)}
+                      {tl.length > (tlPage+1)*PAGE_SIZE && <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[p.uid]:(prev[p.uid]||0)+1 }))} style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 0",fontSize:12,fontWeight:700,cursor:"pointer" }}>もっと見る</button>}
+                    </div>
+                  </>)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div style={S.nav}>
+        <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>🔍 探す</button>
+        <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ ({Object.keys(matches).length})</button>
+        <button style={S.navBtn} onClick={() => setScreen("mypage")}>👤 マイページ{unreadCount > 0 ? <span style={{ marginLeft:4,background:"#e57373",color:"#fff",borderRadius:"50%",fontSize:10,padding:"1px 5px",fontWeight:700 }}>{unreadCount}</span> : ""}</button>
+      </div>
+      {tutorialEl}{toastEl}
+    </div></div>
+  );
+
+  // ── matches ──────────────────────────────────────────────
+  if (screen === "matches") return (
+    <div style={S.app}><div style={S.page}>
+      <div style={S.bar}><span style={S.barTitle}>💚 マッチ一覧</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
+      <div style={{ flex:1,overflowY:"auto",padding:16 }}>
+        {Object.keys(matches).length === 0 ? (
+          <div style={S.empty}>
+            <div style={{ fontSize:48 }}>💚</div>
+            <p style={{ color:"#3d6b4f",fontSize:15,fontWeight:800,marginTop:12 }}>まだマッチがありません</p>
+            <p style={{ color:"#6b8f71",fontSize:13,marginTop:6 }}>気になる人にいいねしてみましょう</p>
+            <button style={{ ...S.btn,width:"auto",padding:"12px 28px",marginTop:16 }} onClick={() => setScreen("browse")}>探しに行く 🌿</button>
+          </div>
+        ) : (
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {Object.values(matches).map(m => {
+              const isExpanded = expandedUid === m.uid;
+              const tl = profileTimelines[m.uid] || [];
+              const tlPage = profileTimelinePages[m.uid] || 0;
+              const { commons: mCommons } = myProfile ? calcScore(myProfile, m) : { commons: [] };
+              return (
+                <div key={m.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }} onClick={() => toggleExpand(m.uid)}>
+                    <AvatarImg avatarUrl={m.avatarUrl} emoji={m.avatar} size={50} />
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
+                      <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location}{m.gender?" · "+m.gender:""} · {m.severity}</div>
+                      {mCommons.length > 0 && <div style={{ fontSize:11,color:"#52a875",marginTop:2,fontWeight:700 }}>🌿 共通点：{mCommons.slice(0,2).join("・")}{mCommons.length > 2 ? ` +${mCommons.length - 2}` : ""}</div>}
+                      <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ · {isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
+                    </div>
+                    <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:2 }}>
+                      <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }} style={{ background:"#52a875",border:"none",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",color:"#fff" }}>💬 チャット</button>
+                      {unreadChats[m.uid] && <span style={{ fontSize:10,color:"#e57373",fontWeight:700 }}>🔴 新着あり</span>}
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
+                      {m.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{m.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+                      {m.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{m.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+                      {m.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:10,background:"#f0f7f2",borderRadius:10 }}>{m.bio}</p>}
+                      {tl.length > 0 && (<>
+                        <div style={S.secLabel}>📝 タイムライン</div>
+                        <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                          {tl.slice(0,(tlPage+1)*PAGE_SIZE).map(t => <TimelinePost key={t.id} post={t} ownerUid={m.uid} currentUser={currentUser} onClickUser={handleClickUser} canDelete={false} highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />)}
+                          {tl.length > (tlPage+1)*PAGE_SIZE && <button onClick={() => setProfileTimelinePages(prev => ({ ...prev,[m.uid]:(prev[m.uid]||0)+1 }))} style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 0",fontSize:12,fontWeight:700,cursor:"pointer" }}>もっと見る</button>}
+                        </div>
+                      </>)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <div style={S.nav}>
+        <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
+        <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>💚 マッチ</button>
+        <button style={S.navBtn} onClick={() => setScreen("mypage")}>👤 マイページ</button>
+      </div>
+    </div></div>
+  );
+
+  // ── mypage ───────────────────────────────────────────────
+  if (screen === "mypage") return (
+    <div style={S.app}><div style={S.page}>
+      <div style={S.bar}><span style={S.barTitle}>👤 マイページ</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
+      <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
+
+        {/* 通知 */}
+        {notifications.length === 0 && (
+          <div style={{ ...S.card,textAlign:"center",padding:"20px 24px" }}>
+            <div style={{ fontSize:32,marginBottom:8 }}>🔔</div>
+            <p style={{ color:"#6b8f71",fontSize:13,fontWeight:700 }}>まだ通知はありません</p>
+            <p style={{ color:"#a8c5b0",fontSize:12,marginTop:4 }}>いいねやコメントが届くとここに表示されます</p>
+          </div>
+        )}
+        {notifications.length > 0 && (
+          <div style={S.card}>
+            <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
+            <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+              {notifications.slice(0, visibleCount).map(n => (
+                <button key={n.id} onClick={() => handleNotificationClick(n)}
+                  style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:n.read?"#f0f7f2":"#e8f5e9",borderRadius:12,border:n.read?"none":"1.5px solid #c8e6c9",cursor:"pointer",width:"100%",textAlign:"left" }}>
+                  <span style={{ fontSize:22,flexShrink:0,position:"relative" }}>
+                    {n.fromUserAvatar}
+                    {!n.read && <span style={{ position:"absolute",top:-2,right:-2,width:8,height:8,background:"#e57373",borderRadius:"50%",display:"block" }} />}
+                  </span>
+                  <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
+                    <strong>{n.fromUserName}</strong>さんが
+                    {n.type === "profile_like" || n.type === "like" ? "🌿 あなたに共感しています → 見てみる" : ("💬 " + (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") + "にコメントしました → 見にいく")}
+                    <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(n.createdAt).toLocaleDateString("ja-JP")}</div>
+                  </div>
+                  <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
                 </button>
+              ))}
+              {notifications.length > visibleCount && (
+                <button onClick={() => setVisibleCount(v => v + 5)} style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"8px 0",fontSize:13,fontWeight:700,cursor:"pointer" }}>もっと見る</button>
               )}
             </div>
           </div>
+        )}
+
+        {/* プロフィールカード */}
+        {myProfile && (
+          <div style={S.card}>
+            <div style={{ textAlign:"center",marginBottom:16 }}>
+
+              {/* ────────────────────────────────────────
+                  マイページ：アバター表示 + 変更UI
+              ──────────────────────────────────────── */}
+              <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:12 }}>
+
+                {/* アバタープレビュー（保存中は仮表示） */}
+                {avatarPreview
+                  ? <img src={avatarPreview} alt="プレビュー" style={{ width:96,height:96,borderRadius:"50%",objectFit:"cover",border:"2px solid #52a875" }} />
+                  : <AvatarImg avatarUrl={myProfile.avatarUrl} emoji={myProfile.avatar} size={96} />
+                }
+
+                {avatarSaving
+                  ? <div style={{ fontSize:12,color:"#52a875",fontWeight:700 }}>保存中...</div>
+                  : (
+                    <div style={{ display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center" }}>
+                      {/* 画像変更 */}
+                      <label style={{ cursor:"pointer",background:"#f0f7f2",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:700,color:"#52a875" }}>
+                        📷 画像を変更
+                        <input type="file" accept="image/*" style={{ display:"none" }}
+                          onChange={async e => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            if (file.size > 1024 * 1024) { alert("画像は1MB以下にしてください"); return; }
+                            setAvatarPreview(URL.createObjectURL(file));
+                            e.target.value = "";
+                            setAvatarSaving(true);
+                            try {
+                              const url = await uploadAvatar(currentUser.uid, file);
+                              await set(ref(db, `users/${currentUser.uid}/avatarUrl`), url);
+                              setMyProfile(prev => ({ ...prev, avatarUrl: url }));
+                              setAvatarPreview(null);
+                              showToast("アバター画像を更新しました 🌿");
+                            } catch (err) {
+                              alert(err.message);
+                              setAvatarPreview(null);
+                            } finally { setAvatarSaving(false); }
+                          }} />
+                      </label>
+
+                      {/* 画像が設定されている場合のみ「絵文字に戻す」を表示 */}
+                      {myProfile.avatarUrl && (
+                        <button onClick={resetToEmoji}
+                          style={{ background:"#fff",border:"1.5px solid #e0ede5",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:700,color:"#6b8f71",cursor:"pointer" }}>
+                          {myProfile.avatar || "🌿"} 絵文字に戻す
+                        </button>
+                      )}
+                    </div>
+                  )
+                }
+              </div>
+
+              <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{myProfile.name}</div>
+              <div style={{ fontSize:13,color:"#6b8f71" }}>{myProfile.age}歳 · {myProfile.gender} · {myProfile.location}</div>
+            </div>
+            <div style={{ display:"flex",justifyContent:"center",flexWrap:"wrap",gap:6,marginBottom:12 }}>
+              {myProfile.severity && <span style={S.badge}>{myProfile.severity}</span>}
+              {myProfile.skinType && <span style={S.badge}>{myProfile.skinType}</span>}
+              {myProfile.yearsWithAtopy && <span style={{ ...S.badge,background:"#e8f5e9" }}>歴{myProfile.yearsWithAtopy}年</span>}
+            </div>
+            {myProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{myProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+            {myProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{myProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
+            {myProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{myProfile.bio}</p>}
+            <button style={{ ...S.btn,marginTop:16 }} onClick={() => { setProfileForm(myProfile); setAvatarPreview(null); setAvatarFile(null); setScreen("register"); }}>プロフィールを編集</button>
+          </div>
+        )}
+
+        {/* タイムライン投稿 */}
+        <div style={S.card}>
+          <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>📝 タイムライン</div>
+          <textarea style={{ ...S.input,height:70,resize:"vertical",marginBottom:8 }} placeholder="今日の体調や日常を投稿しましょう..." value={timelineInput} onChange={e => setTimelineInput(e.target.value)} />
+          {imagePreview && (
+            <div style={{ position:"relative",marginBottom:8 }}>
+              <img src={imagePreview} alt="preview" style={{ width:"100%",maxHeight:200,objectFit:"cover",borderRadius:10 }} />
+              <button onClick={() => { setImageFile(null); setImagePreview(null); }} style={{ position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.5)",color:"#fff",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:14,lineHeight:"24px",textAlign:"center" }}>✕</button>
+            </div>
+          )}
+          <label style={{ display:"block",marginBottom:8,cursor:"pointer" }}>
+            <input type="file" accept="image/*" style={{ display:"none" }}
+              onChange={e => { const file = e.target.files[0]; if (!file) return; setImageFile(file); setImagePreview(URL.createObjectURL(file)); e.target.value = ""; }} />
+            <span style={{ display:"inline-block",background:"#f0f7f2",border:"1.5px solid #c8e6c9",color:"#52a875",borderRadius:10,padding:"6px 14px",fontSize:12,fontWeight:700 }}>📷 画像を追加</span>
+          </label>
+          <button style={S.btn} onClick={postTimeline} disabled={timelineLoading}>{timelineLoading?"投稿中...":"投稿する"}</button>
+          <div style={{ marginTop:16,display:"flex",flexDirection:"column",gap:10 }}>
+            {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
+            {myTimeline.slice(0,(timelinePage+1)*PAGE_SIZE).map(t => (
+              <TimelinePost key={t.id} post={t} ownerUid={currentUser.uid} currentUser={currentUser}
+                onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id, t.imagePath)}
+                highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
+            ))}
+            {myTimeline.length > (timelinePage+1)*PAGE_SIZE && (
+              <button onClick={() => setTimelinePage(p => p+1)} style={{ width:"100%",background:"#f0f7f2",color:"#52a875",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"8px 0",fontSize:13,fontWeight:700,cursor:"pointer",marginTop:4 }}>もっと見る</button>
+            )}
+          </div>
         </div>
-        <div style={S.nav}>
-          <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
-          <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ</button>
-          <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>👤 マイページ</button>
-        </div>
-        {toastEl}
       </div>
-    </div>
+      <div style={S.nav}>
+        <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
+        <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ</button>
+        <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>👤 マイページ</button>
+      </div>
+      {toastEl}
+    </div></div>
   );
 }
 
