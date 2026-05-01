@@ -45,6 +45,27 @@ function TimelinePostInner({
 
   // ── 投稿者情報取得（🔥追加）
   useEffect(() => {
+  if (!isHighlighted) return;
+
+  const scrollTimer = setTimeout(() => {
+    if (postRef.current) {
+      postRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }
+  }, 300);
+
+  const clearTimer = setTimeout(() => {
+    if (clearHighlight) clearHighlight();
+  }, 3000);
+
+  return () => {
+    clearTimeout(scrollTimer);
+    clearTimeout(clearTimer);
+  };
+}, [isHighlighted]);
+  useEffect(() => {
     const loadUser = async () => {
       const snap = await get(ref(db, "users/" + ownerUid));
       if (snap.exists()) {
