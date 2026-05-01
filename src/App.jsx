@@ -736,8 +736,22 @@ export default function App() {
           <div style={{ display:"flex",gap:12,marginBottom:12 }}>
             <div style={{ flex:1 }}>
               <label style={S.label}>年齢（18歳以上）</label>
-              <input style={S.input} type="number" min="18" max="100" placeholder="25" value={profileForm.age}
-                onChange={e => { const v=e.target.value; if(v===""||Number(v)>=18) setProfileForm(f => ({ ...f,age:v })); }} />
+           <input
+  type="text"
+  inputMode="numeric"
+  placeholder="25"
+  value={profileForm.age}
+  onFocus={(e) => e.target.select()}
+  onChange={(e) => {
+    const val = e.target.value;
+
+    // ゆるく数字だけ許可
+    if (/^\d*$/.test(val)) {
+      setProfileForm(f => ({ ...f, age: val }));
+    }
+  }}
+  style={S.input}
+/>
             </div>
             <div style={{ flex:1 }}>
               <label style={S.label}>地域</label>
