@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { db, auth } from "./firebase.js";
+import { db, auth, storage } from "./firebase.js";
 import { ref, set, get, onValue, push, remove } from "firebase/database";
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
 import ChatScreen from "./ChatScreen.jsx";
 import TimelinePost from "./TimelinePost.jsx";
@@ -54,6 +55,8 @@ export default function App() {
   const [chatTarget, setChatTarget] = useState(null);
   const [myTimeline, setMyTimeline] = useState([]);
   const [timelineInput, setTimelineInput] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [timelinePage, setTimelinePage] = useState(0);
   const [expandedUid, setExpandedUid] = useState(null);
@@ -203,18 +206,49 @@ export default function App() {
   };
 
   const postTimeline = async () => {
-    if (!timelineInput.trim() || timelineLoading) return;
+    if (!timelineInput.trim() && !imageFile) return;
+    if (timelineLoading) return;
     setTimelineLoading(true);
     try {
-      await push(ref(db, "timeline/" + currentUser.uid), {
-        text: timelineInput.trim(), createdAt: Date.now(),
-      });
+      let imageUrl = null;
+      let imagePath = null;
+      const postId = Date.now().toString();
+      if (imageFile) {
+        if (imageFile.size > 3 * 1024 * 1024) {
+          alert("画像は3MB以下にしてください");
+          setTimelineLoading(false);
+          return;
+        }
+        const fileName = Date.now() + "_" + imageFile.name;
+        imagePath = "timelineImages/" + currentUser.uid + "/" + postId + "/" + fileName;
+        const fileRef = storageRef(storage, imagePath);
+        await uploadBytes(fileRef, imageFile);
+        imageUrl = await getDownloadURL(fileRef);
+      }
+      const postData = { text: timelineInput.trim(), createdAt: Date.now() };
+      if (imageUrl) {
+        postData.imageUrl = imageUrl;
+        postData.imagePath = imagePath;
+      }
+      await push(ref(db, "timeline/" + currentUser.uid), postData);
       setTimelineInput("");
+      setImageFile(null);
+      setImagePreview(null);
+    } catch (e) {
+      alert("投稿に失敗しました: " + e.message);
     } finally { setTimelineLoading(false); }
   };
 
-  const deleteTimeline = async (id) => {
+  const deleteTimeline = async (id, imagePath) => {
     if (!window.confirm("この投稿を削除しますか？")) return;
+    if (imagePath) {
+      try {
+        const imgRef = storageRef(storage, imagePath);
+        await deleteObject(imgRef);
+      } catch (e) {
+        console.warn("Storage削除失敗:", e.message);
+      }
+    }
     await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
   };
 
@@ -849,12 +883,34 @@ export default function App() {
           <div style={S.card}>
             <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>📝 タイムライン</div>
             <textarea style={{ ...S.input,height:70,resize:"vertical",marginBottom:8 }} placeholder="今日の体調や日常を投稿しましょう..." value={timelineInput} onChange={e => setTimelineInput(e.target.value)} />
+            {/* 画像プレビュー */}
+            {imagePreview && (
+              <div style={{ position:"relative",marginBottom:8 }}>
+                <img src={imagePreview} alt="preview" style={{ width:"100%",maxHeight:200,objectFit:"cover",borderRadius:10 }} />
+                <button onClick={() => { setImageFile(null); setImagePreview(null); }}
+                  style={{ position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.5)",color:"#fff",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:14,lineHeight:"24px",textAlign:"center" }}>✕</button>
+              </div>
+            )}
+            {/* 画像選択ボタン */}
+            <label style={{ display:"block",marginBottom:8,cursor:"pointer" }}>
+              <input type="file" accept="image/*" style={{ display:"none" }}
+                onChange={e => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  setImageFile(file);
+                  setImagePreview(URL.createObjectURL(file));
+                  e.target.value = "";
+                }} />
+              <span style={{ display:"inline-block",background:"#f0f7f2",border:"1.5px solid #c8e6c9",color:"#52a875",borderRadius:10,padding:"6px 14px",fontSize:12,fontWeight:700 }}>
+                📷 画像を追加
+              </span>
+            </label>
             <button style={S.btn} onClick={postTimeline} disabled={timelineLoading}>{timelineLoading?"投稿中...":"投稿する"}</button>
             <div style={{ marginTop:16,display:"flex",flexDirection:"column",gap:10 }}>
               {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
               {myTimeline.slice(0,(timelinePage+1)*PAGE_SIZE).map(t => (
                 <TimelinePost key={t.id} post={t} ownerUid={currentUser.uid} currentUser={currentUser}
-                  onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id)}
+                  onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id, t.imagePath)}
                   highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
               ))}
               {myTimeline.length > (timelinePage+1)*PAGE_SIZE && (
