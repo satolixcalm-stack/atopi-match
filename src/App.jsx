@@ -404,7 +404,13 @@ export default function App() {
       console.warn("Storage削除失敗:", e.message);
     }
   }
+const path = "timeline/" + currentUser.uid + "/" + id;
+  console.log("削除パス:", path);
 
+  await remove(ref(db, path));
+
+  console.log("削除完了");
+};
     await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
   };
 
