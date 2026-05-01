@@ -47,21 +47,20 @@ function TimelinePostInner({
   useEffect(() => {
   if (!isHighlighted) return;
 
-  const scrollTimer = setTimeout(() => {
-    if (postRef.current) {
-      postRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-    }
-  }, 300);
+  // 🔥 即スクロール
+  if (postRef.current) {
+    postRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }
 
+  // ハイライト解除
   const clearTimer = setTimeout(() => {
     if (clearHighlight) clearHighlight();
   }, 3000);
 
   return () => {
-    clearTimeout(scrollTimer);
     clearTimeout(clearTimer);
   };
 }, [isHighlighted]);
