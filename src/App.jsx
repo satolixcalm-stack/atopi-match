@@ -86,7 +86,7 @@ export default function App() {
   const [verificationSent, setVerificationSent] = useState(false);
   const unverifiedRef = { current: false };
 
-  const [currentUser, setCurrentUser] = useState(null);
+  const [c, setC] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({
     name:"",age:"",location:"",gender:"未回答",severity:"",skinType:"",
@@ -133,7 +133,7 @@ export default function App() {
           await signOut(auth);
           return;
         }
-        setCurrentUser(user);
+        setC(user);
         const snap = await get(ref(db, "users/" + user.uid));
         if (snap.exists()) {
           setMyProfile(snap.val());
@@ -148,7 +148,7 @@ export default function App() {
           setScreen("register");
         }
       } else {
-        setCurrentUser(null);
+        setC(null);
         setMyProfile(null);
         if (unverifiedRef.current) {
           unverifiedRef.current = false;
@@ -159,10 +159,10 @@ export default function App() {
     });
   }, []);
 useEffect(() => {
-  if (!currentUser?.uid) return;
+  if (!c?.uid) return;
 
-  const notifRef = ref(db, "notifications/" + currentUser.uid);
-
+  const notifRef = push(ref(db, "notifications/" + ownerUid));
+  await set(notifRef, {
   const unsubscribe = onValue(notifRef, (snap) => {
     if (!snap.exists()) {
       setNotifications([]);
@@ -182,7 +182,7 @@ useEffect(() => {
   });
 
   return () => unsubscribe(); // ←これ超重要
-}, [currentUser?.uid]);
+}, [c?.uid]);
   const loadAllProfiles = async (myUid) => {
     const snap = await get(ref(db, "users"));
     if (!snap.exists()) return;
@@ -322,7 +322,7 @@ useEffect(() => {
 
   if (avatarFile) {
     try {
-      avatarUrl = await uploadAvatar(currentUser.uid, avatarFile);
+      avatarUrl = await uploadAvatar(c.uid, avatarFile);
     } catch (e) {
       alert(e.message);
       return;
@@ -333,14 +333,14 @@ useEffect(() => {
   const profile = {
     ...profileForm,
     age: ageStr, // ← 文字列のまま保存でOK
-    uid: currentUser.uid,
+    uid: c.uid,
     createdAt: Date.now(),
     avatarUrl
   };
 
   try {
     // ── DB保存
-    await set(ref(db, "users/" + currentUser.uid), profile);
+    await set(ref(db, "users/" + c.uid), profile);
 
     // ── state更新
     setMyProfile(profile);
@@ -348,9 +348,9 @@ useEffect(() => {
     setAvatarPreview(null);
 
     // ── データ再取得
-    loadAllProfiles(currentUser.uid);
-    loadMatches(currentUser.uid);
-    loadMyTimeline(currentUser.uid);
+    loadAllProfiles(c.uid);
+    loadMatches(c.uid);
+    loadMyTimeline(c.uid);
 
     // ── 画面遷移
     setScreen("browse");
@@ -367,7 +367,7 @@ useEffect(() => {
   const resetToEmoji = async () => {
     if (!window.confirm("画像を削除して絵文字アバターに戻しますか？")) return;
     try {
-      await set(ref(db, `users/${currentUser.uid}/avatarUrl`), "");
+      await set(ref(db, `users/${c.uid}/avatarUrl`), "");
       setMyProfile(prev => ({ ...prev, avatarUrl: "" }));
       setAvatarPreview(null);
       showToast(`${myProfile.avatar || "🌿"} 絵文字に戻しました`);
@@ -387,7 +387,7 @@ useEffect(() => {
     let imagePath = null;
 
     // 🔥 pushでID生成（これが正）
-    const newRef = push(ref(db, "timeline/" + currentUser.uid));
+    const newRef = push(ref(db, "timeline/" + c.uid));
     const postId = newRef.key;
 
     if (imageFile) {
