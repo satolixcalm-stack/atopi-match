@@ -251,8 +251,43 @@ comments.forEach(c => {
 
       {/* 投稿内容 */}
       <div style={{ fontSize: 14 }}>{post.text}</div>
-<div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
-  {formatDate(post.createdAt)}
+<div
+  style={{
+    fontSize: 11,
+    color: "#888",
+    marginTop: 4,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between"
+  }}
+>
+  {/* 左：日時 */}
+  <span>{formatDate(post.createdAt)}</span>
+
+  {/* 右：いいね＋ユーザー */}
+  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    
+    <button
+      onClick={toggleLike}
+      disabled={isOwner}
+      style={{
+        background: "transparent",
+        border: "none",
+        cursor: isOwner ? "default" : "pointer",
+        fontSize: 14,
+        color: isLiked ? "#e53935" : "#999",
+        opacity: isOwner ? 0.4 : 1
+      }}
+    >
+      ❤️ {likeCount}
+    </button>
+
+    {displayUsers.map((u) => (
+      <div key={u.uid} onClick={() => onClickUser(u.uid)}>
+        <Avatar avatarUrl={u.avatarUrl} avatar={u.avatar} size={16} />
+      </div>
+    ))}
+  </div>
 </div>
       {post.imageUrl && (
         <img
@@ -285,47 +320,6 @@ comments.forEach(c => {
 
   {/* ここに投稿内容 */}
 </div>
-      {/* いいね */}
-     <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-  
-  {/* いいねボタン */}
-  <button
-  onClick={toggleLike}
-  disabled={isOwner}
-  style={{
-    background: "transparent",
-    border: "none",
-    cursor: isOwner ? "default" : "pointer",
-    fontSize: 16,
-    padding: 4,
-    color: isLiked ? "#e53935" : "#999",
-    opacity: isOwner ? 0.4 : 1,
-    transition: "transform 0.1s"
-  }}
-  onMouseDown={(e) => {
-    if (!isOwner) e.currentTarget.style.transform = "scale(0.9)";
-  }}
-  onMouseUp={(e) => {
-    if (!isOwner) e.currentTarget.style.transform = "scale(1)";
-  }}
->
-  ❤️ {likeCount}
-</button>
-
-  {/* いいねしたユーザー（アバターだけ） */}
-  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-    {displayUsers.map((u) => (
-      <div
-        key={u.uid}
-        style={{ cursor: "pointer" }}
-        onClick={() => onClickUser(u.uid)}
-      >
-        <Avatar avatarUrl={u.avatarUrl} avatar={u.avatar} size={20} />
-      </div>
-    ))}
-  </div>
-
-</div>
 
       {/* コメント */}
     {/* コメント */}
@@ -353,9 +347,32 @@ comments.forEach(c => {
               <b>{parent.userName}</b>：{parent.text}
             </div>
 
-            <div style={{ fontSize: 10, color: "#888" }}>
-              {parent.createdAt && formatDate(parent.createdAt)}
-            </div>
+           <div
+  style={{
+    fontSize: 10,
+    color: "#888",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center"
+  }}
+>
+  <span>{parent.createdAt && formatDate(parent.createdAt)}</span>
+
+  <button
+    onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
+    disabled={parent.userId === currentUser.uid}
+    style={{
+      background: "transparent",
+      border: "none",
+      cursor: parent.userId === currentUser.uid ? "default" : "pointer",
+      fontSize: 11,
+      color: parent.likes?.[currentUser.uid] ? "#e53935" : "#999",
+      opacity: parent.userId === currentUser.uid ? 0.4 : 1
+    }}
+  >
+    ❤️ {parent.likes ? Object.keys(parent.likes).length : 0}
+  </button>
+</div>
        <button
   onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
   disabled={parent.userId === currentUser.uid}
@@ -433,10 +450,32 @@ comments.forEach(c => {
                   <div>
                     <b>{reply.userName}</b>：{reply.text}
                   </div>
+<div
+  style={{
+    fontSize: 10,
+    color: "#888",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center"
+  }}
+>
+  <span>{reply.createdAt && formatDate(reply.createdAt)}</span>
 
-                  <div style={{ fontSize: 10, color: "#888" }}>
-                    {reply.createdAt && formatDate(reply.createdAt)}
-                  </div>
+  <button
+    onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
+    disabled={reply.userId === currentUser.uid}
+    style={{
+      background: "transparent",
+      border: "none",
+      cursor: reply.userId === currentUser.uid ? "default" : "pointer",
+      fontSize: 11,
+      color: reply.likes?.[currentUser.uid] ? "#e53935" : "#999",
+      opacity: reply.userId === currentUser.uid ? 0.4 : 1
+    }}
+  >
+    ❤️ {reply.likes ? Object.keys(reply.likes).length : 0}
+  </button>
+</div>
                   {/* 👇ここ追加 */}
 <button
   onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
