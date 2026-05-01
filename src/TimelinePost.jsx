@@ -106,7 +106,11 @@ function TimelinePostInner({
 
       const list = Object.entries(val)
         .filter(([, v]) => v && v.text && v.createdAt)
-        .map(([key, v]) => ({ id: key, ...v }))
+        .map(([key, v]) => ({
+  id: key,
+  ...v,
+  likes: v.likes || {}
+}))
         .sort((a, b) => b.createdAt - a.createdAt);
 
       setComments(list);
@@ -162,6 +166,18 @@ function TimelinePostInner({
 
   // 🔥 返信状態リセット
   setReplyTarget(null);
+};
+  const toggleCommentLike = async (commentId, currentLikes) => {
+  const likeRef = ref(
+    db,
+    `timeline/${ownerUid}/${post.id}/comments/${commentId}/likes/${currentUser.uid}`
+  );
+
+  if (currentLikes && currentLikes[currentUser.uid]) {
+    await remove(likeRef);
+  } else {
+    await set(likeRef, true);
+  }
 };
   const deleteComment = async (commentId) => {
   if (!window.confirm("コメントを削除しますか？")) return;
@@ -399,6 +415,19 @@ comments.forEach(c => {
                   <div style={{ fontSize: 10, color: "#888" }}>
                     {reply.createdAt && formatDate(reply.createdAt)}
                   </div>
+                  {/* 👇ここ追加 */}
+<button
+  onClick={() => toggleCommentLike(reply.id, reply.likes)}
+  style={{
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    fontSize: 12,
+    color: reply.likes?.[currentUser.uid] ? "#e53935" : "#999"
+  }}
+>
+  ❤️ {reply.likes ? Object.keys(reply.likes).length : 0}
+</button>
                 </div>
               </div>
 
