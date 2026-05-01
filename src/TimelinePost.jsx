@@ -154,10 +154,10 @@ function TimelinePostInner({
   };
 
   const postComment = async () => {
-    console.log("コメント送信", replyTarget);
+    
   const text = commentInput.trim();
   if (!text) return;
-
+console.log("コメント送信", replyTarget);
   setCommentInput("");
 
   const snap = await get(ref(db, "users/" + currentUser.uid));
