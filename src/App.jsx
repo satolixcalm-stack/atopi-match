@@ -20,6 +20,25 @@ const AVATARS = [
 ];
 const PAGE_SIZE = 3;
 
+// ── デフォルトアバター（外部ファイル不要）
+const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23e0ede5'/%3E%3Ccircle cx='32' cy='26' r='11' fill='%23b0c8b8'/%3E%3Cellipse cx='32' cy='54' rx='19' ry='13' fill='%23b0c8b8'/%3E%3C/svg%3E";
+
+// ── 丸いアバター画像コンポーネント
+function AvatarImg({ url, size = 48 }) {
+  return (
+    <img
+      src={url || DEFAULT_AVATAR}
+      alt="avatar"
+      onError={e => { e.target.src = DEFAULT_AVATAR; }}
+      style={{
+        width: size, height: size, borderRadius: "50%",
+        objectFit: "cover", border: "2px solid #c8e6c9",
+        background: "#f0f7f2", flexShrink: 0,
+      }}
+    />
+  );
+}
+
 function calcScore(me, other) {
   let score = 0;
   const commons = [];
@@ -73,6 +92,11 @@ export default function App() {
   const [visibleCount, setVisibleCount] = useState(5);
   const [filterMode, setFilterMode] = useState("all");
   const [unreadChats, setUnreadChats] = useState({});
+
+  // ── アバター用 state
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarSaving, setAvatarSaving] = useState(false);
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (user) => {
@@ -190,15 +214,37 @@ export default function App() {
     } finally { setAuthLoading(false); }
   };
 
+  // ── アバターアップロード共通関数
+  const uploadAvatar = async (uid, file) => {
+    if (file.size > 1024 * 1024) throw new Error("画像は1MB以下にしてください");
+    const fileRef = storageRef(storage, `avatars/${uid}/avatar.jpg`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    await set(ref(db, `users/${uid}/avatarUrl`), url);
+    return url;
+  };
+
+  // ── プロフィール登録（アバター画像対応）
   const submitProfile = async () => {
     if (!profileForm.name || !profileForm.severity) return;
     if (profileForm.age && Number(profileForm.age) < 18) {
       alert("18歳以上の方のみご利用いただけます");
       return;
     }
-    const profile = { ...profileForm, uid: currentUser.uid, createdAt: Date.now() };
+    let avatarUrl = profileForm.avatarUrl || "";
+    if (avatarFile) {
+      try {
+        avatarUrl = await uploadAvatar(currentUser.uid, avatarFile);
+      } catch (e) {
+        alert(e.message);
+        return;
+      }
+    }
+    const profile = { ...profileForm, uid: currentUser.uid, createdAt: Date.now(), avatarUrl };
     await set(ref(db, "users/" + currentUser.uid), profile);
     setMyProfile(profile);
+    setAvatarFile(null);
+    setAvatarPreview(null);
     loadAllProfiles(currentUser.uid);
     loadMatches(currentUser.uid);
     loadMyTimeline(currentUser.uid);
@@ -383,7 +429,6 @@ export default function App() {
   const handleNotificationClick = async (n) => {
     await markAsRead(n);
     if (n.type === "profile_like" || n.type === "like") {
-      // 共感通知 → 相手のプロフィールへ
       const snap = await get(ref(db, "users/" + n.fromUserId));
       if (!snap.exists()) return;
       const profile = { uid: n.fromUserId, ...snap.val() };
@@ -391,7 +436,6 @@ export default function App() {
       await loadProfileTimeline(n.fromUserId, true);
       setScreen("viewProfile");
     } else if (n.type === "post_like" || n.type === "comment") {
-      // 投稿いいね・コメント通知 → 自分のマイページへ
       setHighlightedPostId(null);
       setScreen("mypage");
       if (n.postId) setTimeout(() => setHighlightedPostId(n.postId), 400);
@@ -460,7 +504,10 @@ export default function App() {
           <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
             <div style={S.card}>
               <div style={{ textAlign:"center",marginBottom:16 }}>
-                <div style={{ fontSize:64 }}>{viewProfile.avatar}</div>
+                {/* ── アバター画像表示（viewProfile） */}
+                <div style={{ display:"flex",justifyContent:"center",marginBottom:8 }}>
+                  <AvatarImg url={viewProfile.avatarUrl} size={96} />
+                </div>
                 <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{viewProfile.name}</div>
                 <div style={{ fontSize:13,color:"#6b8f71" }}>{viewProfile.age}歳 · {viewProfile.gender} · {viewProfile.location}</div>
               </div>
@@ -516,12 +563,11 @@ export default function App() {
               </div>
             )}
           </div>
+          {toastEl}
         </div>
-        {toastEl}
       </div>
     );
   }
-
 
   if (screen === "chat" && (!chatTarget || !currentUser || !myProfile)) { setScreen("matches"); return null; }
   if (screen === "chat") return (
@@ -589,10 +635,30 @@ export default function App() {
         <div style={S.bar}><span style={S.barTitle}>🌿 プロフィール作成</span><button style={S.ghost} onClick={() => signOut(auth)}>ログアウト</button></div>
         <div style={{ padding:16,overflowY:"auto",flex:1 }}>
           <div style={S.card}>
-            <label style={S.label}>アバター</label>
+
+            {/* ── アバター画像アップロード */}
+            <label style={S.label}>アバター画像（任意・1MB以下）</label>
+            <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:14,padding:"14px 0",background:"#f0f7f2",borderRadius:12 }}>
+              <AvatarImg url={avatarPreview || profileForm.avatarUrl} size={88} />
+              <label style={{ cursor:"pointer",background:"#fff",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"6px 16px",fontSize:12,fontWeight:700,color:"#52a875" }}>
+                📷 画像を選択
+                <input type="file" accept="image/*" style={{ display:"none" }}
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    if (file.size > 1024 * 1024) { alert("画像は1MB以下にしてください"); return; }
+                    setAvatarFile(file);
+                    setAvatarPreview(URL.createObjectURL(file));
+                    e.target.value = "";
+                  }} />
+              </label>
+            </div>
+
+            <label style={S.label}>または絵文字アバターを選択</label>
             <div style={{ ...S.chips,marginBottom:14 }}>
               {AVATARS.map(a => <button key={a} onClick={() => setProfileForm(f => ({ ...f,avatar:a }))} style={{ fontSize:24,background:profileForm.avatar===a?"#e8f5e9":"#f0f7f2",border:profileForm.avatar===a?"2px solid #52a875":"2px solid #c8e6c9",borderRadius:12,padding:"4px 8px",cursor:"pointer" }}>{a}</button>)}
             </div>
+
             <label style={S.label}>ニックネーム</label>
             <input style={{ ...S.input,marginBottom:12 }} placeholder="さくら" value={profileForm.name} onChange={e => setProfileForm(f => ({ ...f,name:e.target.value }))} />
             <div style={{ display:"flex",gap:12,marginBottom:12 }}>
@@ -667,7 +733,8 @@ export default function App() {
             return (
               <div key={p.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
                 <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px" }} onClick={() => toggleExpand(p.uid)}>
-                  <div style={{ fontSize:36,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",background:"#f0f7f2",borderRadius:"50%",flexShrink:0 }}>{p.avatar}</div>
+                  {/* ── アバター画像（browse） */}
+                  <AvatarImg url={p.avatarUrl} size={50} />
                   <div style={{ flex:1,minWidth:0 }}>
                     <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{p.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{p.age}歳</span></div>
                     <div style={{ fontSize:11,color:"#6b8f71" }}>{p.location}{p.gender?" · "+p.gender:""} · {p.severity}</div>
@@ -720,7 +787,6 @@ export default function App() {
                         </div>
                       </>
                     )}
-
                   </div>
                 )}
               </div>
@@ -761,7 +827,8 @@ export default function App() {
                 return (
                   <div key={m.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }} onClick={() => toggleExpand(m.uid)}>
-                      <div style={{ fontSize:36,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",background:"#f0f7f2",borderRadius:"50%",flexShrink:0 }}>{m.avatar}</div>
+                      {/* ── アバター画像（matches） */}
+                      <AvatarImg url={m.avatarUrl} size={50} />
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
                         <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location}{m.gender?" · "+m.gender:""} · {m.severity}</div>
@@ -865,7 +932,32 @@ export default function App() {
           {myProfile && (
             <div style={S.card}>
               <div style={{ textAlign:"center",marginBottom:16 }}>
-                <div style={{ fontSize:64 }}>{myProfile.avatar}</div>
+                {/* ── アバター画像（マイページ）+ 変更ボタン */}
+                <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:8 }}>
+                  <AvatarImg url={avatarPreview || myProfile.avatarUrl} size={96} />
+                  <label style={{ cursor:"pointer",background:"#f0f7f2",border:"1.5px solid #c8e6c9",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:700,color:"#52a875" }}>
+                    📷 画像を変更
+                    <input type="file" accept="image/*" style={{ display:"none" }}
+                      onChange={async e => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        if (file.size > 1024 * 1024) { alert("画像は1MB以下にしてください"); return; }
+                        setAvatarPreview(URL.createObjectURL(file));
+                        e.target.value = "";
+                        setAvatarSaving(true);
+                        try {
+                          const url = await uploadAvatar(currentUser.uid, file);
+                          setMyProfile(prev => ({ ...prev, avatarUrl: url }));
+                          setAvatarPreview(null);
+                          showToast("アバターを更新しました 🌿");
+                        } catch (err) {
+                          alert(err.message);
+                          setAvatarPreview(null);
+                        } finally { setAvatarSaving(false); }
+                      }} />
+                  </label>
+                  {avatarSaving && <div style={{ fontSize:12,color:"#52a875" }}>保存中...</div>}
+                </div>
                 <div style={{ fontSize:22,fontWeight:800,color:"#3d6b4f" }}>{myProfile.name}</div>
                 <div style={{ fontSize:13,color:"#6b8f71" }}>{myProfile.age}歳 · {myProfile.gender} · {myProfile.location}</div>
               </div>
@@ -877,7 +969,7 @@ export default function App() {
               {myProfile.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{myProfile.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
               {myProfile.treatments?.length > 0 && <><div style={S.secLabel}>治療法</div><div style={S.chips}>{myProfile.treatments.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
               {myProfile.bio && <p style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,marginTop:10,padding:12,background:"#f0f7f2",borderRadius:12 }}>{myProfile.bio}</p>}
-              <button style={{ ...S.btn,marginTop:16 }} onClick={() => { setProfileForm(myProfile); setScreen("register"); }}>プロフィールを編集</button>
+              <button style={{ ...S.btn,marginTop:16 }} onClick={() => { setProfileForm(myProfile); setAvatarPreview(null); setAvatarFile(null); setScreen("register"); }}>プロフィールを編集</button>
             </div>
           )}
           <div style={S.card}>
