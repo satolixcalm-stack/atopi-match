@@ -154,6 +154,7 @@ function TimelinePostInner({
   };
 
   const postComment = async () => {
+    console.log("コメント送信", replyTarget);
   const text = commentInput.trim();
   if (!text) return;
 
