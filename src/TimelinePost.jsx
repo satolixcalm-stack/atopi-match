@@ -404,7 +404,7 @@ comments.forEach(c => {
 
               <div style={{ display: "flex", gap: 6 }}>
                 <button
-                  onClick={() => setReplyTarget(parent)}
+                  onClick={() => setReplyTarget(reply)}
                   style={{
                     background: "transparent",
                     border: "none",
