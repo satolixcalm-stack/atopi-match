@@ -348,6 +348,18 @@ comments.forEach(c => {
             <div style={{ fontSize: 10, color: "#888" }}>
               {parent.createdAt && formatDate(parent.createdAt)}
             </div>
+            <button
+  onClick={() => toggleCommentLike(parent.id, parent.likes)}
+  style={{
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    fontSize: 12,
+    color: parent.likes?.[currentUser.uid] ? "#e53935" : "#999"
+  }}
+>
+  ❤️ {parent.likes ? Object.keys(parent.likes).length : 0}
+</button>
           </div>
         </div>
 
