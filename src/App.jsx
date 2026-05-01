@@ -158,27 +158,28 @@ export default function App() {
 useEffect(() => {
   if (!currentUser?.uid) return;
 
-  const notifRef = ref(db, "notifications/" + currentUser.uid);
+  console.log("🔔 リスナー登録:", currentUser.uid); // 何回呼ばれるか確認
 
+  const notifRef = ref(db, "notifications/" + currentUser.uid);
   const unsubscribe = onValue(notifRef, (snap) => {
+    console.log("🔔 onValue発火, exists:", snap.exists(), "件数:", snap.size); // sizeで確認
     if (!snap.exists()) {
       setNotifications([]);
       setUnreadCount(0);
       return;
     }
-
     const list = [];
-    snap.forEach(c => list.push({ id: c.key, ...c.val() }));
-
+    snap.forEach(c => {
+      console.log("🔔 通知キー:", c.key, c.val()); // 各通知を確認
+      list.push({ ...c.val(), id: c.key });
+    });
     list.sort((a, b) => b.createdAt - a.createdAt);
-
-    console.log("通知件数:", list.length);
-
+    console.log("🔔 最終list:", list.length, list);
     setNotifications(list);
     setUnreadCount(list.filter(n => !n.read).length);
   });
 
-  return () => unsubscribe(); // ←これ超重要
+  return () => unsubscribe();
 }, [currentUser?.uid]);
   const loadAllProfiles = async (myUid) => {
     const snap = await get(ref(db, "users"));
