@@ -446,6 +446,7 @@ export default function App() {
       const list = [];
       snap.forEach(c => list.push({ id: c.key, ...c.val() }));
       list.sort((a, b) => b.createdAt - a.createdAt);
+      console.log("通知件数:", list.length, list);
       setNotifications(list);
       setUnreadCount(list.filter(n => !n.read).length);
     });
