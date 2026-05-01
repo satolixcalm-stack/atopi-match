@@ -102,6 +102,9 @@ function TimelinePostInner({ post, ownerUid, currentUser, onClickUser, canDelete
         <button onClick={onDelete} style={{ position:"absolute",top:8,right:8,background:"none",border:"none",color:"#e57373",fontSize:14,cursor:"pointer" }}>✕</button>
       )}
       <div style={{ fontSize:13,color:"#4a6b54",lineHeight:1.7,paddingRight:canDelete?20:0 }}>{post.text}</div>
+      {post.imageUrl && (
+        <img src={post.imageUrl} alt="投稿画像" style={{ width:"100%",maxHeight:240,objectFit:"cover",borderRadius:8,marginTop:6 }} />
+      )}
       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:4 }}>{new Date(post.createdAt).toLocaleDateString("ja-JP")}</div>
 
       <div style={{ display:"flex",alignItems:"center",gap:10,marginTop:8,flexWrap:"wrap" }}>
