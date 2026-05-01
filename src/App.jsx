@@ -551,11 +551,16 @@ export default function App() {
       setViewProfile({ uid: n.fromUserId, ...snap.val() });
       await loadProfileTimeline(n.fromUserId, true);
       setScreen("viewProfile");
-    } else if (n.type === "post_like" || n.type === "comment") {
-      setHighlightedPostId(null);
-      setScreen("mypage");
-      if (n.postId) setTimeout(() => setHighlightedPostId(n.postId), 400);
-    }
+   } else if (n.type === "post_like" || n.type === "comment") {
+  // ① まず highlight をリセット
+  setHighlightedPostId(null);
+  // ② マイページに遷移
+  setScreen("mypage");
+  // ③ 投稿リストのレンダリングを待ってからセット（600msに延長）
+  if (n.postId) {
+    setTimeout(() => setHighlightedPostId(n.postId), 600);
+  }
+}
   };
 
   const toggleArr = (key, val) => setProfileForm(f => ({
