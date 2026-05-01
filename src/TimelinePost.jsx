@@ -191,7 +191,19 @@ const formatDate = (ts) => {
 
   return new Date(ts).toLocaleDateString();
 };
-  
+  // 🔥 コメントを親子に分ける
+const parentComments = comments.filter(c => !c.replyTo);
+
+const repliesMap = {};
+comments.forEach(c => {
+  if (c.replyTo) {
+    const parentId = c.replyTo.commentId;
+    if (!repliesMap[parentId]) {
+      repliesMap[parentId] = [];
+    }
+    repliesMap[parentId].push(c);
+  }
+});
   return (
     <div
       ref={postRef}
@@ -294,88 +306,138 @@ const formatDate = (ts) => {
       {/* コメント */}
     {/* コメント */}
 <div style={{ marginTop: 10 }}>
-  {comments.map((c) => (
-    <div
-      key={c.id}
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        marginLeft: c.replyTo ? 20 : 0, // 🔥 返信は少し右に
-        marginBottom: 6
-      }}
-    >
-      {/* 左側 */}
-      <div style={{ display: "flex", gap: 6 }}>
-        
-        {/* アバタークリック */}
-        <div
-          style={{ cursor: "pointer" }}
-          onClick={() => onClickUser(c.userId)}
-        >
-          <Avatar
-            avatarUrl={c.userAvatarUrl}
-            avatar={c.userAvatar}
-            size={18}
-          />
-        </div>
-
-        <div>
-          {/* 🔥 返信先表示 */}
-          {c.replyTo && (
-            <div style={{ fontSize: 11, color: "#888" }}>
-              ↪ {c.replyTo.userName} への返信
-            </div>
-          )}
+  {parentComments.map((parent) => (
+    <div key={parent.id} style={{ marginBottom: 10 }}>
+      
+      {/* 親コメント */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          
+          <div
+            style={{ cursor: "pointer" }}
+            onClick={() => onClickUser(parent.userId)}
+          >
+            <Avatar
+              avatarUrl={parent.userAvatarUrl}
+              avatar={parent.userAvatar}
+              size={18}
+            />
+          </div>
 
           <div>
-            <b>{c.userName}</b>：{c.text}
-          </div>
+            <div>
+              <b>{parent.userName}</b>：{parent.text}
+            </div>
 
-          {/* 日時 */}
-          <div style={{ fontSize: 10, color: "#888" }}>
-            {c.createdAt && formatDate(c.createdAt)}
+            <div style={{ fontSize: 10, color: "#888" }}>
+              {parent.createdAt && formatDate(parent.createdAt)}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 右側ボタン */}
-      <div style={{ display: "flex", gap: 6 }}>
-        
-        {/* 🔥 返信ボタン */}
-        <button
-          onClick={() => setReplyTarget(c)}
-          style={{
-            background: "transparent",
-            border: "none",
-            fontSize: 12,
-            cursor: "pointer",
-            color: "#666"
-          }}
-        >
-          返信
-        </button>
-
-        {/* 削除 */}
-        {(c.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+        <div style={{ display: "flex", gap: 6 }}>
           <button
-            onClick={() => deleteComment(c.id)}
+            onClick={() => setReplyTarget(parent)}
             style={{
               background: "transparent",
               border: "none",
-              color: "#e53935",
-              fontSize: 14,
-              cursor: "pointer"
+              fontSize: 12,
+              cursor: "pointer",
+              color: "#666"
             }}
           >
-            ×
+            返信
           </button>
-        )}
+
+          {(parent.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+            <button
+              onClick={() => deleteComment(parent.id)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#e53935",
+                fontSize: 14,
+                cursor: "pointer"
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* 🔥 返信一覧 */}
+      {repliesMap[parent.id] && (
+        <div style={{ marginLeft: 24, marginTop: 4 }}>
+          {repliesMap[parent.id].map((reply) => (
+            <div
+              key={reply.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 4
+              }}
+            >
+              <div style={{ display: "flex", gap: 6 }}>
+                
+                <div
+                  style={{ cursor: "pointer" }}
+                  onClick={() => onClickUser(reply.userId)}
+                >
+                  <Avatar
+                    avatarUrl={reply.userAvatarUrl}
+                    avatar={reply.userAvatar}
+                    size={16}
+                  />
+                </div>
+
+                <div>
+                  <div>
+                    <b>{reply.userName}</b>：{reply.text}
+                  </div>
+
+                  <div style={{ fontSize: 10, color: "#888" }}>
+                    {reply.createdAt && formatDate(reply.createdAt)}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  onClick={() => setReplyTarget(parent)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    fontSize: 12,
+                    cursor: "pointer",
+                    color: "#666"
+                  }}
+                >
+                  返信
+                </button>
+
+                {(reply.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+                  <button
+                    onClick={() => deleteComment(reply.id)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "#e53935",
+                      fontSize: 14,
+                      cursor: "pointer"
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   ))}
 </div>
-
 
       {/* 入力 */}
       {replyTarget && (
