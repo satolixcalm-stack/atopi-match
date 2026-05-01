@@ -56,7 +56,7 @@ function TimelinePostInner({
 
   const clearTimer = setTimeout(() => {
     if (clearHighlight) clearHighlight();
-  }, 3000);
+  }, 1000);
 
   return () => {
     cancelAnimationFrame(raf);
