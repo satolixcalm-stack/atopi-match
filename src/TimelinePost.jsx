@@ -30,6 +30,7 @@ function TimelinePostInner({
   highlightedPostId,
   clearHighlight
 }) {
+  const [replyTarget, setReplyTarget] = useState(null);
   const [likes, setLikes] = useState(post.likes || {});
   const [likeUsers, setLikeUsers] = useState([]);
   const [comments, setComments] = useState([]);
@@ -130,26 +131,38 @@ function TimelinePostInner({
   };
 
   const postComment = async () => {
-    const text = commentInput.trim();
-    if (!text) return;
+  const text = commentInput.trim();
+  if (!text) return;
 
-    setCommentInput("");
+  setCommentInput("");
 
-    const snap = await get(ref(db, "users/" + currentUser.uid));
-    const user = snap.val();
+  const snap = await get(ref(db, "users/" + currentUser.uid));
+  const user = snap.val();
 
-    await push(
-      ref(db, "timeline/" + ownerUid + "/" + post.id + "/comments"),
-      {
-        text,
-        userId: currentUser.uid,
-        userName: user.name,
-        userAvatar: user.avatar,
-        userAvatarUrl: user.avatarUrl,
-        createdAt: Date.now()
-      }
-    );
-  };
+  await push(
+    ref(db, "timeline/" + ownerUid + "/" + post.id + "/comments"),
+    {
+      text,
+      userId: currentUser.uid,
+      userName: user.name,
+      userAvatar: user.avatar,
+      userAvatarUrl: user.avatarUrl,
+      createdAt: Date.now(),
+
+      // 🔥 ここ追加
+      replyTo: replyTarget
+        ? {
+            userId: replyTarget.userId,
+            userName: replyTarget.userName,
+            commentId: replyTarget.id
+          }
+        : null
+    }
+  );
+
+  // 🔥 返信状態リセット
+  setReplyTarget(null);
+};
   const deleteComment = async (commentId) => {
   if (!window.confirm("コメントを削除しますか？")) return;
 
@@ -286,15 +299,16 @@ const formatDate = (ts) => {
       key={c.id}
       style={{
         display: "flex",
-        alignItems: "center",
         justifyContent: "space-between",
-        gap: 6
+        alignItems: "flex-start",
+        marginLeft: c.replyTo ? 20 : 0, // 🔥 返信は少し右に
+        marginBottom: 6
       }}
     >
-      {/* 左側：アバター＋テキスト */}
-      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      {/* 左側 */}
+      <div style={{ display: "flex", gap: 6 }}>
         
-        {/* 🔥 アバタークリックでプロフィールへ */}
+        {/* アバタークリック */}
         <div
           style={{ cursor: "pointer" }}
           onClick={() => onClickUser(c.userId)}
@@ -307,38 +321,74 @@ const formatDate = (ts) => {
         </div>
 
         <div>
+          {/* 🔥 返信先表示 */}
+          {c.replyTo && (
+            <div style={{ fontSize: 11, color: "#888" }}>
+              ↪ {c.replyTo.userName} への返信
+            </div>
+          )}
+
           <div>
             <b>{c.userName}</b>：{c.text}
           </div>
 
-          {/* 🔥 日時表示 */}
+          {/* 日時 */}
           <div style={{ fontSize: 10, color: "#888" }}>
             {c.createdAt && formatDate(c.createdAt)}
           </div>
         </div>
       </div>
 
-      {/* 🔥 削除ボタン */}
-      {(c.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+      {/* 右側ボタン */}
+      <div style={{ display: "flex", gap: 6 }}>
+        
+        {/* 🔥 返信ボタン */}
         <button
-          onClick={() => deleteComment(c.id)}
+          onClick={() => setReplyTarget(c)}
           style={{
             background: "transparent",
             border: "none",
-            color: "#e53935",
-            fontSize: 14,
-            cursor: "pointer"
+            fontSize: 12,
+            cursor: "pointer",
+            color: "#666"
           }}
         >
-          ×
+          返信
         </button>
-      )}
+
+        {/* 削除 */}
+        {(c.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+          <button
+            onClick={() => deleteComment(c.id)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#e53935",
+              fontSize: 14,
+              cursor: "pointer"
+            }}
+          >
+            ×
+          </button>
+        )}
+      </div>
     </div>
   ))}
 </div>
 
 
       {/* 入力 */}
+      {replyTarget && (
+  <div style={{ fontSize: 12, color: "#888", marginBottom: 4 }}>
+    {replyTarget.userName} に返信中
+    <span
+      onClick={() => setReplyTarget(null)}
+      style={{ marginLeft: 8, cursor: "pointer" }}
+    >
+      ✕
+    </span>
+  </div>
+)}
       <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
         <input
           value={commentInput}
