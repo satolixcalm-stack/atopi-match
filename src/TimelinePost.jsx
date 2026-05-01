@@ -258,7 +258,7 @@ comments.forEach(c => {
     marginTop: 4,
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between"
+    gap: 6 
   }}
 >
   {/* 左：日時 */}
@@ -299,27 +299,15 @@ comments.forEach(c => {
           }}
         />
       )}
-<div style={{ position: "relative" }}>
-  {canDelete && (
-    <button
-      onClick={onDelete}
-      style={{
-        position: "absolute",
-        top: 6,
-        right: 6,
-        background: "transparent",
-        border: "none",
-        color: "#e53935",
-        fontSize: 18,
-        cursor: "pointer"
-      }}
-    >
-      ×
-    </button>
-  )}
-
-  {/* ここに投稿内容 */}
-</div>
+<div
+  ref={postRef}
+  style={{
+    padding: "12px",
+    background: "#f0f7f2",
+    borderRadius: 12,
+    position: "relative" // ←ここ追加
+  }}
+>
 
       {/* コメント */}
     {/* コメント */}
