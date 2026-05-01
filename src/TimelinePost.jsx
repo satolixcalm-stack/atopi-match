@@ -357,7 +357,7 @@ comments.forEach(c => {
               {parent.createdAt && formatDate(parent.createdAt)}
             </div>
           <button
-  onClick={() => toggleCommentLike(c.id, c.likes)}
+  onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
   disabled={c.userId === currentUser.uid}
   style={{
     background: "transparent",
@@ -439,7 +439,7 @@ comments.forEach(c => {
                   </div>
                   {/* 👇ここ追加 */}
 <button
-  onClick={() => toggleCommentLike(c.id, c.likes)}
+  onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
   disabled={c.userId === currentUser.uid}
   style={{
     background: "transparent",
