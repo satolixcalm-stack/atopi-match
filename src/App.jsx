@@ -178,16 +178,28 @@ export default function App() {
   };
 
   const loadMyTimeline = (uid) => {
-    onValue(ref(db, "timeline/" + uid), (snap) => {
-      if (!snap.exists()) { setMyTimeline([]); return; }
-      const list = [];
-      snap.forEach(c => {
-        const val = c.val();
-        if (val && (val.text || val.imageUrl)) list.push({ id: c.key, ...val });
-      });
-      setMyTimeline(list.slice().reverse());
+  onValue(ref(db, "timeline/" + uid), (snap) => {
+    if (!snap.exists()) {
+      setMyTimeline([]);
+      return;
+    }
+
+    const list = [];
+
+    snap.forEach(c => {
+      const val = c.val();
+
+      if (val && (val.text || val.imageUrl)) {
+        list.push({
+          ...val,
+          id: c.key // 🔥 必ず最後に入れる
+        });
+      }
     });
-  };
+
+    setMyTimeline(list.slice().reverse());
+  });
+};
 
   const loadProfileTimeline = async (uid, forceReload = false) => {
     if (profileTimelines[uid] && !forceReload) return;
@@ -347,7 +359,7 @@ export default function App() {
     let imageUrl = null;
     let imagePath = null;
 
-    // 🔥 ここが最重要（pushのIDを先に取得）
+    // 🔥 pushでID生成（これが正）
     const newRef = push(ref(db, "timeline/" + currentUser.uid));
     const postId = newRef.key;
 
@@ -360,8 +372,8 @@ export default function App() {
 
       const fileName = Date.now() + "_" + imageFile.name;
 
-      // 🔥 postIdを使う
-      imagePath = "timelineImages/" + currentUser.uid + "/" + postId + "/" + fileName;
+      // 🔥 DBのIDと完全一致させる
+      imagePath = `timelineImages/${currentUser.uid}/${postId}/${fileName}`;
 
       const fileRef = storageRef(storage, imagePath);
       await uploadBytes(fileRef, imageFile);
@@ -375,7 +387,7 @@ export default function App() {
       imagePath: imagePath || null
     };
 
-    // 🔥 pushじゃなくて set
+    // 🔥 pushじゃなくset
     await set(newRef, postData);
 
     setTimelineInput("");
@@ -383,36 +395,39 @@ export default function App() {
     setImagePreview(null);
 
   } catch (e) {
+    console.error(e);
     alert("投稿に失敗しました: " + e.message);
   } finally {
     setTimelineLoading(false);
   }
 };
-
- const deleteTimeline = async (id, imagePath) => {
-  console.log("削除開始");
-  console.log("uid:", currentUser.uid);
-  console.log("id:", id);
-
+ const deleteTimeline = async (ownerUid, id, imagePath) => {
   if (!window.confirm("この投稿を削除しますか？")) return;
 
-  if (imagePath) {
-    try {
-      await deleteObject(storageRef(storage, imagePath));
-      console.log("Storage削除OK");
-    } catch (e) {
-      console.warn("Storage削除失敗:", e.message);
+  try {
+    console.log("削除UID:", ownerUid);
+    console.log("削除ID:", id);
+
+    // Storage削除
+    if (imagePath) {
+      try {
+        await deleteObject(storageRef(storage, imagePath));
+        console.log("画像削除OK");
+      } catch (e) {
+        console.warn("Storage削除失敗:", e.message);
+      }
     }
+
+    // 🔥 UIDを明示して削除（これが重要）
+    await remove(ref(db, `timeline/${ownerUid}/${id}`));
+
+    console.log("削除成功");
+
+  } catch (e) {
+    console.error("削除エラー:", e);
+    alert("削除に失敗しました");
   }
-const path = "timeline/" + currentUser.uid + "/" + id;
-  console.log("削除パス:", path);
-
-  await remove(ref(db, path));
-
-  console.log("削除完了");
 };
-    await remove(ref(db, "timeline/" + currentUser.uid + "/" + id));
-  };
 
   const loadMyLikes = (uid) => {
     onValue(ref(db, "likes/" + uid), (snap) => {
@@ -1082,7 +1097,7 @@ const path = "timeline/" + currentUser.uid + "/" + id;
             {myTimeline.length === 0 && <p style={{ color:"#a8c5b0",fontSize:13,textAlign:"center" }}>まだ投稿がありません</p>}
             {myTimeline.slice(0,(timelinePage+1)*PAGE_SIZE).map(t => (
               <TimelinePost key={t.id} post={t} ownerUid={currentUser.uid} currentUser={currentUser}
-                onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(t.id, t.imagePath)}
+                onClickUser={handleClickUser} canDelete={true} onDelete={() => deleteTimeline(currentUser.uid, t.id, t.imagePath)}
                 highlightedPostId={highlightedPostId} clearHighlight={() => setHighlightedPostId(null)} />
             ))}
             {myTimeline.length > (timelinePage+1)*PAGE_SIZE && (
