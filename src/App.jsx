@@ -649,6 +649,9 @@ const formatTime = (ts) => {
 
   // ↓ この関数をまるごと差し替える
 const handleNotificationClick = async (n) => {
+  console.log("isVisible:", isVisible);
+console.log("visibleCount:", visibleCount);
+console.log("timeline length:", myTimeline.length);
   console.log("通知データ全体:", JSON.stringify(n)); // ← 追加
   console.log("type:", n.type, "targetType:", n.targetType, "postId:", n.postId); // ← 追加
   await markAsRead(n);
