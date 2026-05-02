@@ -40,6 +40,7 @@ function TimelinePostInner({
 
   const COMMENT_PAGE_SIZE = 3;
   const postRef = useRef(null);
+  const inputRef = useRef(null);
   const isHighlighted = post.id === highlightedPostId;
   const isOwner = currentUser.uid === ownerUid;
 
@@ -236,6 +237,19 @@ if (replyTarget && replyTarget.userId !== currentUser.uid && replyTarget.userId 
     alert("削除に失敗しました");
   }
 };
+  // 返信ボタンを押したときの処理
+const handleReply = (target) => {
+  setReplyTarget(target);
+
+  // replyTargetのstateが反映されてからスクロール・フォーカスする必要があるため
+  // requestAnimationFrameで1フレーム待つ
+  requestAnimationFrame(() => {
+    if (inputRef.current) {
+      inputRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      inputRef.current.focus();
+    }
+  });
+};
   const isLiked = !!likes[currentUser.uid];
   const likeCount = Object.keys(likes).length;
   const displayUsers = likeUsers.slice(0, 3);
@@ -347,6 +361,27 @@ comments.forEach(c => {
         <Avatar avatarUrl={u.avatarUrl} avatar={u.avatar} size={16} />
       </div>
     ))}
+     {/* ↓ 投稿への返信ボタンを追加 */}
+  {!isOwner && (
+    <button
+      onClick={() => handleReply({
+        userId: ownerUid,
+        userName: ownerUser?.name || "投稿者",
+        id: post.id
+      })}
+      style={{
+        background: "transparent",
+        border: "none",
+        fontSize: 11,
+        cursor: "pointer",
+        color: "#52a875",
+        fontWeight: 700
+      }}
+    >
+      返信
+    </button>
+  )}
+</div>
   </div>
 </div>
       {post.imageUrl && (
@@ -419,17 +454,17 @@ comments.forEach(c => {
 
         <div style={{ display: "flex", gap: 6 }}>
           <button
-            onClick={() => setReplyTarget(parent)}
-            style={{
-              background: "transparent",
-              border: "none",
-              fontSize: 12,
-              cursor: "pointer",
-              color: "#666"
-            }}
-          >
-            返信
-          </button>
+  onClick={() => handleReply(parent)}
+  style={{
+    background: "transparent",
+    border: "none",
+    fontSize: 12,
+    cursor: "pointer",
+    color: "#666"
+  }}
+>
+  返信
+</button>
 
           {(parent.userId === currentUser.uid || ownerUid === currentUser.uid) && (
             <button
@@ -547,11 +582,12 @@ comments.forEach(c => {
 )}
       <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
         <input
-          value={commentInput}
-          onChange={(e) => setCommentInput(e.target.value)}
-          placeholder="コメント..."
-          style={{ flex: 1 }}
-        />
+  ref={inputRef}  // ← 追加
+  value={commentInput}
+  onChange={(e) => setCommentInput(e.target.value)}
+  placeholder="コメント..."
+  style={{ flex: 1 }}
+/>
         <button onClick={postComment}>送信</button>
       </div>
     </div>
