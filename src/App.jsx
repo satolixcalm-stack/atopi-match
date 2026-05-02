@@ -653,6 +653,11 @@ const handleNotificationClick = async (n) => {
   console.log("type:", n.type, "targetType:", n.targetType, "postId:", n.postId); // ← 追加
   await markAsRead(n);
 
+// 🔥 画面に表示されてる投稿かチェック
+const isVisible = myTimeline
+  .slice(0, visibleCount)
+  .some(p => p.id === n.postId);
+  
   if (n.type === "profile_like" || n.type === "like") {
     const snap = await get(ref(db, "users/" + n.fromUserId));
     if (!snap.exists()) return;
@@ -668,15 +673,26 @@ const handleNotificationClick = async (n) => {
         setSelectedPostId(n.postId);
         setScreen("postDetail");
       }
-    } else {
-      // ① コメント通知（従来通り）→ mypage + スクロール
-      setHighlightedPostId(null);
-      setScreen("mypage");
-      if (n.postId) {
-        setTimeout(() => setHighlightedPostId(n.postId), 0);
-      }
+   } else {
+  // ① 投稿コメント
+
+  if (isVisible) {
+    // 見えてる → スクロール
+    setHighlightedPostId(null);
+    setScreen("mypage");
+    if (n.postId) {
+      setTimeout(() => setHighlightedPostId(n.postId), 0);
     }
 
+  } else {
+    // 🔥 見えてない → 詳細ページへ
+    if (n.postId) {
+      setSelectedPostId(n.postId);
+      setSelectedOwnerUid?.(n.ownerUid); // あれば呼ぶ（無ければ無視でOK）
+      setScreen("postDetail");
+    }
+  }
+}
   } else if (n.type === "post_like") {
     // post_like は従来通りmypage
     setHighlightedPostId(null);
