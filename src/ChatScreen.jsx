@@ -225,13 +225,18 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
       >
         {/* 相手のアバター（左側に表示） */}
         {!isMe && (
-          <div style={{
-            fontSize: 18, width: 30, height: 30,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "#fff", borderRadius: "50%", flexShrink: 0,
-          }}>
-            {chatTarget.avatar}
-          </div>
+         {chatTarget.avatarUrl ? (
+  <img src={chatTarget.avatarUrl} alt="avatar"
+    style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"1px solid #c8e6c9" }} />
+) : (
+  <div style={{
+    fontSize: 18, width: 30, height: 30,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    background: "#fff", borderRadius: "50%", flexShrink: 0,
+  }}>
+    {chatTarget.avatar}
+  </div>
+)}
         )}
 
         {/* ── 画像メッセージ */}
@@ -278,13 +283,18 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
         boxShadow: "0 1px 8px rgba(61,107,79,0.07)", flexShrink: 0,
       }}>
         <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 20, color: "#6b8f71", cursor: "pointer" }}>←</button>
-        <div style={{
-          fontSize: 26, width: 38, height: 38,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: "#f0f7f2", borderRadius: "50%",
-        }}>
-          {chatTarget.avatar}
-        </div>
+       {chatTarget.avatarUrl ? (
+  <img src={chatTarget.avatarUrl} alt="avatar"
+    style={{ width:38, height:38, borderRadius:"50%", objectFit:"cover", border:"2px solid #c8e6c9" }} />
+) : (
+  <div style={{
+    fontSize: 26, width: 38, height: 38,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    background: "#f0f7f2", borderRadius: "50%",
+  }}>
+    {chatTarget.avatar}
+  </div>
+)}
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#3d6b4f" }}>{chatTarget.name}</div>
           <div style={{ fontSize: 10, color: isOnline ? "#52a875" : "#aaa" }}>
@@ -305,7 +315,12 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
         {/* メッセージがない時の表示 */}
         {messages.length === 0 && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
-            <div style={{ fontSize: 40 }}>{chatTarget.avatar}</div>
+           {chatTarget.avatarUrl ? (
+  <img src={chatTarget.avatarUrl} alt="avatar"
+    style={{ width:60, height:60, borderRadius:"50%", objectFit:"cover", border:"2px solid #c8e6c9" }} />
+) : (
+  <div style={{ fontSize: 40 }}>{chatTarget.avatar}</div>
+)}
             <p style={{ color: "#6b8f71", fontSize: 13, marginTop: 8 }}>
               {chatTarget.name}さんとマッチ！<br />最初のメッセージを送りましょう 💚
             </p>
