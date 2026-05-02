@@ -383,7 +383,6 @@ comments.forEach(c => {
   )}
 </div>
   </div>
-</div>
       {post.imageUrl && (
         <img
           src={post.imageUrl}
