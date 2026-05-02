@@ -1047,14 +1047,15 @@ if (screen === "postDetail") {
   onMouseEnter={() => setHoveredUid(p.uid)}
   onMouseLeave={() => setHoveredUid(null)}
   style={{
-    background: hoveredUid === p.uid ? "#f3faf6" : "#fff",
-    borderRadius: 18,
-    boxShadow: "0 2px 14px rgba(61,107,79,0.08)",
-    overflow: "hidden",
-    transform: hoveredUid === p.uid ? "scale(0.995)" : "scale(1)",
-    transition: "transform 0.15s ease, background 0.15s ease",
-    cursor: "pointer",
-  }}
+  background: "#fff",
+  borderRadius: 18,
+  boxShadow: hoveredUid === p.uid
+    ? "0 6px 20px rgba(61,107,79,0.15)"
+    : "0 2px 14px rgba(61,107,79,0.08)",
+  transform: hoveredUid === p.uid ? "translateY(-2px)" : "none",
+  transition: "all 0.2s ease",
+  cursor: "pointer"
+}}
 >
               <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px" }} onClick={() => toggleExpand(p.uid)}>
                 {/* 画像→絵文字の順で自動判定して表示 */}
