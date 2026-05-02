@@ -291,7 +291,7 @@ comments.forEach(c => {
   }}
 >
    {/* 右上アクションエリア（投稿） */}
-<div style={{ position:"absolute", top:6, right:6, minWidth:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
+<div style={{ position:"absolute", top:6, right:6, width:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
   {!isOwner && (
     <button
       onClick={() => handleReply({
@@ -299,7 +299,7 @@ comments.forEach(c => {
         userName: ownerUser?.name || "投稿者",
         id: post.id
       })}
-      style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer", color:"#666" }}
+      style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer", color:"#444" }}
     >
       返信
     </button>
@@ -380,7 +380,7 @@ comments.forEach(c => {
     <div key={parent.id} style={{ marginBottom:10, position:"relative" }}>
 
       {/* 右上アクション */}
-      <div style={{ position:"absolute", top:0, right:0, minWidth:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
+      <div style={{ position:"absolute", top:0, right:0, width:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
         <button
           onClick={() => handleReply(parent)}
           style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer" }}
