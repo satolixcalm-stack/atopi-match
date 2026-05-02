@@ -270,7 +270,8 @@ const list = Object.values(grouped)
   .sort((a, b) => b.latestCreatedAt - a.latestCreatedAt);
 
 setNotifications(list);
-// グループ単位で未読を数える
+console.log("grouped未読数:", Object.values(grouped).filter(n => !n.read).length);
+console.log("grouped一覧:", Object.values(grouped).map(n => ({ type: n.type, read: n.read })));
 setUnreadCount(Object.values(grouped).filter(n => !n.read).length);
   });
 
