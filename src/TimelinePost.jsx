@@ -403,11 +403,25 @@ comments.forEach(c => {
     <div style={{ cursor:"pointer" }} onClick={() => onClickUser(parent.userId)}>
       <Avatar avatarUrl={parent.userAvatarUrl} avatar={parent.userAvatar} size={18} />
     </div>
-    <div style={{ maxWidth: "calc(100% - 80px)", wordBreak: "break-word" }}>
-  <div>
-    <span style={{ fontWeight:600, fontSize:13, color:"#4a6b54" }}>{parent.userName}</span>
-    <span style={{ fontSize:14, color:"#4a6b54" }}>：{parent.text}</span>
+    <div style={{ maxWidth: "calc(100% - 80px)" }}>
+
+  {/* 名前 */}
+  <div style={{ fontWeight:600, fontSize:13, color:"#4a6b54" }}>
+    {parent.userName}
   </div>
+
+  {/* 本文 */}
+  <div
+    style={{
+      fontSize:14,
+      color:"#4a6b54",
+      wordBreak: "break-word"
+    }}
+  >
+    {parent.text}
+  </div>
+
+</div>
       <div style={{ fontSize:10, color:"#888", display:"flex", alignItems:"center", gap:6 }}>
         <span style={timeStyle}>{parent.createdAt && formatDate(parent.createdAt)}</span>
         <button
@@ -443,11 +457,23 @@ comments.forEach(c => {
     <div style={{ cursor:"pointer" }} onClick={() => onClickUser(reply.userId)}>
       <Avatar avatarUrl={reply.userAvatarUrl} avatar={reply.userAvatar} size={16} />
     </div>
-    <div style={{ maxWidth: "calc(100% - 80px)", wordBreak: "break-word" }}>
-  <div>
-    <span style={{ fontWeight:600, fontSize:12, color:"#6b8f71" }}>{reply.userName}</span>
-    <span style={{ fontSize:13, color:"#5f7f68" }}>：{reply.text}</span>
+   <div style={{ maxWidth: "calc(100% - 80px)" }}>
+  
+  <div style={{ fontWeight:600, fontSize:12, color:"#6b8f71" }}>
+    {reply.userName}
   </div>
+
+  <div
+    style={{
+      fontSize:13,
+      color:"#5f7f68",
+      wordBreak: "break-word"
+    }}
+  >
+    {reply.text}
+  </div>
+
+</div>
       <div style={{ fontSize:10, color:"#888", display:"flex", alignItems:"center", gap:6 }}>
         <span style={timeStyle}>{reply.createdAt && formatDate(reply.createdAt)}</span>
         <button
