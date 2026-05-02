@@ -1056,8 +1056,16 @@ if (screen === "postDetail") {
                     {matches[p.uid] ? "❤️ マッチ済" : myLikes[p.uid] ? "🌿 共感済" : "🌿 共感する"}
                   </button>
                   {matches[p.uid] && <button onClick={e => { e.stopPropagation(); setChatTarget(matches[p.uid]); setScreen("chat"); }} style={{ background:"#52a875",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>💬 チャット</button>}
-                  <div style={{ fontSize:10,color:"#a8c5b0" }}>{isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
-                </div>
+                 
+                  <div style={{
+    fontSize: 18,
+    color: "#a8c5b0",
+    transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+    transition: "transform 0.25s ease",
+    lineHeight: 1,
+    userSelect: "none"
+  }}>›</div>
+</div>
               </div>
               {isExpanded && (
                 <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
@@ -1113,13 +1121,20 @@ if (screen === "postDetail") {
                       <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
                       <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location}{m.gender?" · "+m.gender:""} · {m.severity}</div>
                       {mCommons.length > 0 && <div style={{ fontSize:11,color:"#52a875",marginTop:2,fontWeight:700 }}>🌿 共通点：{mCommons.slice(0,2).join("・")}{mCommons.length > 2 ? ` +${mCommons.length - 2}` : ""}</div>}
-                      <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ · {isExpanded?"▲ 閉じる":"▼ 詳細"}</div>
+                      <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ</div>
                     </div>
                     <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:2 }}>
                       <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }} style={{ background:"#52a875",border:"none",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",color:"#fff" }}>💬 チャット</button>
                       {unreadChats[m.uid] && <span style={{ fontSize:10,color:"#e57373",fontWeight:700 }}>🔴 新着あり</span>}
-                    </div>
-                  </div>
+                   <div style={{
+    fontSize: 18,
+    color: "#a8c5b0",
+    transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+    transition: "transform 0.25s ease",
+    lineHeight: 1,
+    userSelect: "none"
+  }}>›</div>
+</div>
                   {isExpanded && (
                     <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
                       {m.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{m.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
