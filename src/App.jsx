@@ -1040,7 +1040,7 @@ if (n.postId) {
         {notifications.length > 0 && (
           <div style={S.card}>
             <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
-          <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+         <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
 
   {notifications.slice(0, visibleCount).map(n => (
     <button
@@ -1094,9 +1094,13 @@ if (n.postId) {
         <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>
           {formatTime(n.createdAt)}
         </div>
-    
+      </div>
 
-  {/* 🔥 ここが正しい位置 */}
+      <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
+    </button>
+  ))}
+
+  {/* ✅ mapの外に置く！！！ */}
   {notifications.length > visibleCount && (
     <button
       onClick={() => setVisibleCount(v => v + 5)}
@@ -1115,6 +1119,8 @@ if (n.postId) {
       もっと見る
     </button>
   )}
+
+</div>
 
 
         {/* プロフィールカード */}
