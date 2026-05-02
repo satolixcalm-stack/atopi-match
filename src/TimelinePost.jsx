@@ -291,7 +291,7 @@ comments.forEach(c => {
   }}
 >
    {/* 右上アクションエリア（投稿） */}
-<div style={{ position:"absolute", top:6, right:6, display:"flex", alignItems:"center", gap:6 }}>
+<div style={{ position:"absolute", top:6, right:6, width:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
   {!isOwner && (
     <button
       onClick={() => handleReply({
@@ -380,7 +380,7 @@ comments.forEach(c => {
     <div key={parent.id} style={{ marginBottom:10, position:"relative" }}>
 
       {/* 右上アクション */}
-      <div style={{ position:"absolute", top:0, right:0, display:"flex", gap:6 }}>
+      <div style={{ position:"absolute", top:0, right:0, width:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
         <button
           onClick={() => handleReply(parent)}
           style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer" }}
@@ -441,21 +441,16 @@ comments.forEach(c => {
             <div key={reply.id} style={{ marginBottom:4, position:"relative" }}>
 
               {/* 右上削除 */}
-              {(reply.userId === currentUser.uid || ownerUid === currentUser.uid) && (
-                <button
-                  onClick={() => deleteComment(reply.id)}
-                  style={{
-                    position:"absolute",
-                    top:0,
-                    right:0,
-                    background:"transparent",
-                    border:"none",
-                    color:"#e53935"
-                  }}
-                >
-                  ×
-                </button>
-              )}
+              <div style={{ position:"absolute", top:0, right:0, width:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
+  {(reply.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+    <button
+      onClick={() => deleteComment(reply.id)}
+      style={{ background:"transparent", border:"none", color:"#e53935", fontSize:14, cursor:"pointer" }}
+    >
+      ×
+    </button>
+  )}
+</div>
 
               <div style={{ display:"flex", gap:6 }}>
                 
