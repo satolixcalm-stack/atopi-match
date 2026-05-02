@@ -649,13 +649,16 @@ const formatTime = (ts) => {
 
   // ↓ この関数をまるごと差し替える
 const handleNotificationClick = async (n) => {
-  console.log("isVisible:", isVisible);
-console.log("visibleCount:", visibleCount);
-console.log("timeline length:", myTimeline.length);
-  console.log("通知データ全体:", JSON.stringify(n)); // ← 追加
-  console.log("type:", n.type, "targetType:", n.targetType, "postId:", n.postId); // ← 追加
+
   await markAsRead(n);
 
+let isVisible = false;
+
+if (Array.isArray(myTimeline)) {
+  const visiblePosts = myTimeline.slice(0, visibleCount || 0);
+  isVisible = visiblePosts.some(p => String(p.id) === String(n.postId));
+}
+  
 // 🔥 画面に表示されてる投稿かチェック
 const isVisible = myTimeline
   .slice(0, visibleCount)
