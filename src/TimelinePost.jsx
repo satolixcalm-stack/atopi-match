@@ -291,7 +291,7 @@ comments.forEach(c => {
   }}
 >
    {/* 右上アクションエリア（投稿） */}
-<div style={{ position:"absolute", top:0, right:6, width:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
+<div style={{ position:"absolute", top:12, right:6, width:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
   {!isOwner && (
     <button
       onClick={() => handleReply({
