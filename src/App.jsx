@@ -116,6 +116,7 @@ export default function App() {
   const [visibleCount, setVisibleCount] = useState(5);
   const [filterMode, setFilterMode] = useState("all");
   const [unreadChats, setUnreadChats] = useState({});
+  const [selectedPostId, setSelectedPostId] = useState(null);
 
   // ── アバター用 state
   const [avatarFile, setAvatarFile] = useState(null);       // 選択中の画像ファイル
@@ -596,24 +597,45 @@ const formatTime = (ts) => {
     await set(ref(db, "notifications/" + currentUser.uid + "/" + n.id + "/read"), true);
   };
 
-  const handleNotificationClick = async (n) => {
-    await markAsRead(n);
-    if (n.type === "profile_like" || n.type === "like") {
-      const snap = await get(ref(db, "users/" + n.fromUserId));
-      if (!snap.exists()) return;
-      setViewProfile({ uid: n.fromUserId, ...snap.val() });
-      await loadProfileTimeline(n.fromUserId, true);
-      setScreen("viewProfile");
-   } else if (n.type === "post_like" || n.type === "comment") {
-  // ① まず highlight をリセット
-  setHighlightedPostId(null);
-  // ② マイページに遷移
-  setScreen("mypage");
-if (n.postId) {
-  setTimeout(() => setHighlightedPostId(n.postId), 0); // 600 → 0
-}
-}
-  };
+  // ↓ この関数をまるごと差し替える
+const handleNotificationClick = async (n) => {
+  console.log("通知データ全体:", JSON.stringify(n)); // ← 追加
+  console.log("type:", n.type, "targetType:", n.targetType, "postId:", n.postId); // ← 追加
+  await markAsRead(n);
+
+  if (n.type === "profile_like" || n.type === "like") {
+    const snap = await get(ref(db, "users/" + n.fromUserId));
+    if (!snap.exists()) return;
+    setViewProfile({ uid: n.fromUserId, ...snap.val() });
+    await loadProfileTimeline(n.fromUserId, true);
+    setScreen("viewProfile");
+
+  } else if (n.type === "comment") {
+
+    if (n.targetType === "comment") {
+      // ② 返信通知 → postDetail画面へ
+      if (n.postId) {
+        setSelectedPostId(n.postId);
+        setScreen("postDetail");
+      }
+    } else {
+      // ① コメント通知（従来通り）→ mypage + スクロール
+      setHighlightedPostId(null);
+      setScreen("mypage");
+      if (n.postId) {
+        setTimeout(() => setHighlightedPostId(n.postId), 0);
+      }
+    }
+
+  } else if (n.type === "post_like") {
+    // post_like は従来通りmypage
+    setHighlightedPostId(null);
+    setScreen("mypage");
+    if (n.postId) {
+      setTimeout(() => setHighlightedPostId(n.postId), 0);
+    }
+  }
+};
 
   const toggleArr = (key, val) => setProfileForm(f => ({
     ...f, [key]: f[key].includes(val) ? f[key].filter(x => x !== val) : [...f[key], val]
@@ -656,6 +678,49 @@ if (n.postId) {
   ) : null;
 
   // ── viewProfile ──────────────────────────────────────────
+ // ↓ ここから追加（viewProfile の if 文の直前）
+
+if (screen === "postDetail") {
+  const post = myTimeline.find(p => p.id === selectedPostId);
+  return (
+    <div style={S.app}><div style={S.page}>
+      <div style={S.bar}>
+        <button style={S.ghost} onClick={() => {
+          setSelectedPostId(null);
+          setScreen("mypage");
+        }}>← 戻る</button>
+        <span style={S.barTitle}>📝 投稿の詳細</span>
+        <div style={{ width: 60 }} />
+      </div>
+      <div style={{ flex:1, overflowY:"auto", padding:16 }}>
+        {!post ? (
+          <div style={{ textAlign:"center", color:"#6b8f71", marginTop:40 }}>
+            <div style={{ fontSize:40 }}>🌿</div>
+            <p>投稿が見つかりませんでした</p>
+            <button style={{ ...S.btn, width:"auto", padding:"10px 24px", marginTop:12 }}
+              onClick={() => { setSelectedPostId(null); setScreen("mypage"); }}>
+              マイページへ戻る
+            </button>
+          </div>
+        ) : (
+          <div style={S.card}>
+            <TimelinePost
+              post={post}
+              ownerUid={currentUser.uid}
+              currentUser={currentUser}
+              onClickUser={handleClickUser}
+              canDelete={false}
+              highlightedPostId={null}
+              clearHighlight={() => {}}
+            />
+          </div>
+        )}
+      </div>
+    </div></div>
+  );
+}
+
+// ↑ ここまで追加
   if (screen === "viewProfile" && !viewProfile) {
     return <div style={{ padding:20,textAlign:"center",color:"#6b8f71" }}>読み込み中...</div>;
   }
