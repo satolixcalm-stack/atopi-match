@@ -1047,7 +1047,7 @@ if (screen === "postDetail") {
   onMouseEnter={() => setHoveredUid(p.uid)}
   onMouseLeave={() => setHoveredUid(null)}
   style={{
-    background: hoveredUid === p.uid ? "#e6f4ea" : "#fff",
+    background: hoveredUid === p.uid ? "#f3faf6" : "#fff",
     borderRadius: 18,
     boxShadow: "0 2px 14px rgba(61,107,79,0.08)",
     overflow: "hidden",
