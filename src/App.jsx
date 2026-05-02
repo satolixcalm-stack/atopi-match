@@ -75,7 +75,57 @@ function calcScore(me, other) {
   });
   return { score, commons };
 }
+function PostDetailLoader({ postId, ownerUid, currentUser, onClickUser, onBack }) {
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    if (!postId || !ownerUid) {
+      setLoading(false);
+      return;
+    }
+    // FirebaseからownerUidの投稿を取得
+    get(ref(db, "timeline/" + ownerUid + "/" + postId))
+      .then(snap => {
+        if (snap.exists()) {
+          setPost({ id: postId, ...snap.val() });
+        }
+        setLoading(false);
+      });
+  }, [postId, ownerUid]);
+
+  if (loading) return (
+    <div style={{ textAlign:"center", color:"#6b8f71", marginTop:40 }}>
+      <div style={{ fontSize:32 }}>🌿</div>
+      <p>読み込み中...</p>
+    </div>
+  );
+
+  if (!post) return (
+    <div style={{ textAlign:"center", color:"#6b8f71", marginTop:40 }}>
+      <div style={{ fontSize:40 }}>🌿</div>
+      <p>投稿が見つかりませんでした</p>
+      <button style={{ marginTop:12, padding:"10px 24px", background:"#52a875",
+        color:"#fff", border:"none", borderRadius:14, cursor:"pointer", fontWeight:700 }}
+        onClick={onBack}>マイページへ戻る</button>
+    </div>
+  );
+
+  return (
+    <div style={{ background:"#fff", borderRadius:20, padding:16,
+      boxShadow:"0 4px 24px rgba(61,107,79,0.08)" }}>
+      <TimelinePost
+        post={post}
+        ownerUid={ownerUid}
+        currentUser={currentUser}
+        onClickUser={onClickUser}
+        canDelete={false}
+        highlightedPostId={null}
+        clearHighlight={() => {}}
+      />
+    </div>
+  );
+}
 export default function App() {
   const [screen, setScreen] = useState("auth");
   const [authMode, setAuthMode] = useState("login");
@@ -681,7 +731,10 @@ const handleNotificationClick = async (n) => {
  // ↓ ここから追加（viewProfile の if 文の直前）
 
 if (screen === "postDetail") {
+  // ① まず自分のタイムラインから探す
+  // ② なければFirebaseから取得する
   const post = myTimeline.find(p => p.id === selectedPostId);
+
   return (
     <div style={S.app}><div style={S.page}>
       <div style={S.bar}>
@@ -693,28 +746,14 @@ if (screen === "postDetail") {
         <div style={{ width: 60 }} />
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:16 }}>
-        {!post ? (
-          <div style={{ textAlign:"center", color:"#6b8f71", marginTop:40 }}>
-            <div style={{ fontSize:40 }}>🌿</div>
-            <p>投稿が見つかりませんでした</p>
-            <button style={{ ...S.btn, width:"auto", padding:"10px 24px", marginTop:12 }}
-              onClick={() => { setSelectedPostId(null); setScreen("mypage"); }}>
-              マイページへ戻る
-            </button>
-          </div>
-        ) : (
-          <div style={S.card}>
-            <TimelinePost
-              post={post}
-              ownerUid={currentUser.uid}
-              currentUser={currentUser}
-              onClickUser={handleClickUser}
-              canDelete={false}
-              highlightedPostId={null}
-              clearHighlight={() => {}}
-            />
-          </div>
-        )}
+        <PostDetailLoader
+          postId={selectedPostId}
+          // 通知のownerUidを渡す（投稿の持ち主のUID）
+          ownerUid={notifications.find(n => n.postId === selectedPostId)?.ownerUid}
+          currentUser={currentUser}
+          onClickUser={handleClickUser}
+          onBack={() => { setSelectedPostId(null); setScreen("mypage"); }}
+        />
       </div>
     </div></div>
   );
