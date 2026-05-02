@@ -662,7 +662,8 @@ if (Array.isArray(myTimeline)) {
     p => String(p.id) === String(n.postId)
   );
 }
-  
+  console.log("isVisible:", isVisible);
+console.log("postId:", n.postId);
   if (n.type === "profile_like" || n.type === "like") {
     const snap = await get(ref(db, "users/" + n.fromUserId));
     if (!snap.exists()) return;
