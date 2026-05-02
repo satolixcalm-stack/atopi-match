@@ -508,18 +508,7 @@ comments.forEach(c => {
               </div>
 
               <div style={{ display: "flex", gap: 6 }}>
-                <button
-                  onClick={() => setReplyTarget(reply)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    fontSize: 12,
-                    cursor: "pointer",
-                    color: "#666"
-                  }}
-                >
-                  返信
-                </button>
+                
 
                 {(reply.userId === currentUser.uid || ownerUid === currentUser.uid) && (
                   <button
