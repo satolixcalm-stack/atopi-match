@@ -75,7 +75,15 @@ function calcScore(me, other) {
   });
   return { score, commons };
 }
-function PostDetailLoader({ postId, ownerUid, currentUser, onClickUser, onBack }) {
+function PostDetailLoader({
+  postId,
+  ownerUid,
+  currentUser,
+  onClickUser,
+  onBack,
+  highlightedPostId,
+  clearHighlight
+}) {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -115,14 +123,14 @@ function PostDetailLoader({ postId, ownerUid, currentUser, onClickUser, onBack }
     <div style={{ background:"#fff", borderRadius:20, padding:16,
       boxShadow:"0 4px 24px rgba(61,107,79,0.08)" }}>
       <TimelinePost
-        post={post}
-        ownerUid={ownerUid}
-        currentUser={currentUser}
-        onClickUser={onClickUser}
-        canDelete={false}
-       highlightedPostId={highlightedPostId}
-clearHighlight={() => setHighlightedPostId(null)}
-      />
+  post={post}
+  ownerUid={ownerUid}
+  currentUser={currentUser}
+  onClickUser={onClickUser}
+  canDelete={false}
+  highlightedPostId={highlightedPostId} // ← ★追加
+  clearHighlight={clearHighlight} // ← ★追加
+/>
     </div>
   );
 }
@@ -761,14 +769,15 @@ if (screen === "postDetail") {
         <div style={{ width: 60 }} />
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:16 }}>
-        <PostDetailLoader
-          postId={selectedPostId}
-          // 通知のownerUidを渡す（投稿の持ち主のUID）
-          ownerUid={notifications.find(n => n.postId === selectedPostId)?.ownerUid}
-          currentUser={currentUser}
-          onClickUser={handleClickUser}
-          onBack={() => { setSelectedPostId(null); setScreen("mypage"); }}
-        />
+      <PostDetailLoader
+  postId={selectedPostId}
+  ownerUid={notifications.find(n => n.postId === selectedPostId)?.ownerUid}
+  currentUser={currentUser}
+  onClickUser={handleClickUser}
+  onBack={() => { setSelectedPostId(null); setScreen("mypage"); }}
+  highlightedPostId={highlightedPostId} // ← ★追加
+  clearHighlight={() => setHighlightedPostId(null)} // ← ★追加
+/>
       </div>
     </div></div>
   );
