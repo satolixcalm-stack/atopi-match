@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { db, auth, storage } from "./firebase.js";
-import { ref, set, get, onValue, push, remove } from "firebase/database";
+import { ref, set, get, onValue, push, remove, update } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
 import ChatScreen from "./ChatScreen.jsx";
@@ -659,9 +659,30 @@ const formatTime = (ts) => {
   };
 
   const markAsRead = async (n) => {
-    if (n.read) return;
-    await set(ref(db, "notifications/" + currentUser.uid + "/" + n.id + "/read"), true);
-  };
+  if (n.read) return;
+
+  const snap = await get(ref(db, "notifications/" + currentUser.uid));
+  if (!snap.exists()) return;
+
+  const updates = {};
+  snap.forEach(c => {
+    const val = c.val();
+    const key = `${val.type}_${val.fromUserId}_${val.postId || "noPost"}`;
+    if (key === n.groupKey && !val.read) {
+      updates[`notifications/${currentUser.uid}/${c.key}/read`] = true;
+    }
+  });
+
+  if (Object.keys(updates).length > 0) {
+    await update(ref(db, "/"), updates);
+  }
+};
+
+  if (Object.keys(updates).length > 0) {
+    const { update } = await import("firebase/database");
+    await update(ref(db, "/"), updates);
+  }
+};
 
   // ↓ この関数をまるごと差し替える
 const handleNotificationClick = async (n) => {
