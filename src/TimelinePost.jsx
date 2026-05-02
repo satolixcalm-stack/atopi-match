@@ -39,6 +39,8 @@ function TimelinePostInner({
   const [ownerUser, setOwnerUser] = useState(null);
 
   const COMMENT_PAGE_SIZE = 3;
+  // 時間表示の共通スタイル
+const timeStyle = { color: "#a8c5b0", fontSize: 11 };
   const postRef = useRef(null);
   const inputRef = useRef(null);
   const isHighlighted = post.id === highlightedPostId;
@@ -348,7 +350,7 @@ comments.forEach(c => {
   }}
 >
   {/* 左：日時 */}
-  <span>{formatDate(post.createdAt)}</span>
+  <span style={timeStyle}>{formatDate(post.createdAt)}</span>
 
   {/* 右：いいね＋ユーザー */}
   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -424,7 +426,7 @@ comments.forEach(c => {
     gap: 6   // ←これが重要
   }}
 >
-  <span style={{ color: "#a8c5b0" }}>{parent.createdAt && formatDate(parent.createdAt)}</span>
+  <span style={timeStyle}>{parent.createdAt && formatDate(parent.createdAt)}</span>
 
   <button
     onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
@@ -504,7 +506,7 @@ comments.forEach(c => {
                 <div>
                   <div>
                     <span style={{ fontWeight: 600, fontSize: 12, color: "#6b8f71" }}>{reply.userName}</span>
-<span style={{ fontSize: 13, color: "#6b8f71" }}>：{reply.text}</span>
+<span style={{ fontSize: 13, color: "#5f7f68" }}>：{reply.text}</span>
                   </div>
 <div
   style={{
@@ -515,7 +517,7 @@ comments.forEach(c => {
     gap: 6
   }}
 >
- <span style={{ color: "#a8c5b0" }}>{reply.createdAt && formatDate(reply.createdAt)}</span>
+<span style={timeStyle}>{reply.createdAt && formatDate(reply.createdAt)}</span>
   <button
     onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
     disabled={reply.userId === currentUser.uid}
