@@ -678,10 +678,7 @@ const formatTime = (ts) => {
   }
 };
 
-  if (Object.keys(updates).length > 0) {
-    await update(ref(db, "/"), updates);
-  }
-};
+  
 
   // ↓ この関数をまるごと差し替える
 const handleNotificationClick = async (n) => {
