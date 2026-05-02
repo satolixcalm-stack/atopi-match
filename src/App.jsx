@@ -668,19 +668,12 @@ const isVisible = !!el;
 
     if (n.targetType === "comment") {
       // ② 返信通知 → postDetail画面へ
-      if (n.postId) {
-        setSelectedPostId(n.postId);
-setScreen("postDetail");
-
-setTimeout(() => {
-  const el = document.getElementById(`post-${n.postId}`);
-  if (el) {
-    el.style.background = "#fff3cd";
-    setTimeout(() => {
-      el.style.background = "";
-    }, 1200);
-  }
-}, 300);
+     if (n.postId) {
+  setSelectedPostId(n.postId);
+  setHighlightedPostId(null);           // ① 一旦リセット
+  setScreen("postDetail");
+  setTimeout(() => setHighlightedPostId(n.postId), 100); // ② 遷移後にセット
+}
       }
    } else {
   // ① 投稿コメント
