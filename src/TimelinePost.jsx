@@ -290,55 +290,37 @@ comments.forEach(c => {
     position: "relative" // ←ここ追加
   }}
 >
-    {canDelete && (
-  <button
-    onClick={onDelete}
-    style={{
-      position: "absolute",
-      top: 6,
-      right: 6,
-      background: "transparent",
-      border: "none",
-      color: "#e53935",
-      fontSize: 18,
-      cursor: "pointer"
-    }}
-  >
-    ×
-  </button>
-)}
-      {/* 🔥 投稿者表示 */}
-  {ownerUser && (
-  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-      <Avatar avatarUrl={ownerUser.avatarUrl} avatar={ownerUser.avatar} />
-      <span style={{ fontWeight: 700, fontSize: 15, color: "#2f4f3f" }}>{ownerUser.name}</span>
-    </div>
+   {/* 右上アクションエリア（投稿） */}
+<div style={{ position:"absolute", top:6, right:6, display:"flex", alignItems:"center", gap:6 }}>
+  {!isOwner && (
+    <button
+      onClick={() => handleReply({
+        userId: ownerUid,
+        userName: ownerUser?.name || "投稿者",
+        id: post.id
+      })}
+      style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer", color:"#666" }}
+    >
+      返信
+    </button>
+  )}
+  {canDelete && (
+    <button
+      onClick={onDelete}
+      style={{ background:"transparent", border:"none", color:"#e53935", fontSize:18, cursor:"pointer" }}
+    >
+      ×
+    </button>
+  )}
+</div>
 
-    {/* 投稿への返信ボタン */}
-    {!isOwner && (
-      <button
-        onClick={() => handleReply({
-          userId: ownerUid,
-          userName: ownerUser.name,
-          id: post.id
-        })}
-        style={{
-  background: "transparent",
-  border: "none",
-  fontSize: 12,
-  cursor: "pointer",
-  color: "#666",
-  marginRight: 24,  // ← × ボタンとの距離
-  marginTop: 2      // ← 少し下げる
-}}
-      >
-        返信
-      </button>
-    )}
+{/* 🔥 投稿者表示 */}
+{ownerUser && (
+  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+    <Avatar avatarUrl={ownerUser.avatarUrl} avatar={ownerUser.avatar} />
+    <span style={{ fontWeight:700, fontSize:15, color:"#2f4f3f" }}>{ownerUser.name}</span>
   </div>
 )}
-
       {/* 投稿内容 */}
       <div style={{ fontSize: 16, color: "#2f4f3f", fontWeight: 500, lineHeight: 1.6 }}>{post.text}</div>
 <div
@@ -396,170 +378,90 @@ comments.forEach(c => {
     {/* コメント */}
 <div style={{ marginTop: 10 }}>
   {parentComments.map((parent) => (
-    <div key={parent.id} style={{ marginBottom: 10 }}>
-      
-      {/* 親コメント */}
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: 6 }}>
-          
-          <div
-            style={{ cursor: "pointer" }}
-            onClick={() => onClickUser(parent.userId)}
-          >
-            <Avatar
-              avatarUrl={parent.userAvatarUrl}
-              avatar={parent.userAvatar}
-              size={18}
-            />
-          </div>
+   <div key={parent.id} style={{ marginBottom:10, position:"relative" }}>
 
-          <div>
-            <div>
-              <span style={{ fontWeight: 600, fontSize: 13, color: "#4a6b54" }}>{parent.userName}</span>
-<span style={{ fontSize: 14, color: "#4a6b54" }}>：{parent.text}</span>
-            </div>
+  {/* 右上アクションエリア（コメント） */}
+  <div style={{ position:"absolute", top:0, right:0, display:"flex", alignItems:"center", gap:6 }}>
+    <button
+      onClick={() => handleReply(parent)}
+      style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer", color:"#666" }}
+    >
+      返信
+    </button>
+    {(parent.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+      <button
+        onClick={() => deleteComment(parent.id)}
+        style={{ background:"transparent", border:"none", color:"#e53935", fontSize:14, cursor:"pointer" }}
+      >
+        ×
+      </button>
+    )}
+  </div>
 
-         <div
-  style={{
-    fontSize: 10,
-    color: "#888",
-    display: "flex",
-    alignItems: "center",
-    gap: 6   // ←これが重要
-  }}
->
-  <span style={timeStyle}>{parent.createdAt && formatDate(parent.createdAt)}</span>
-
-  <button
-    onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
-    disabled={parent.userId === currentUser.uid}
-    style={{
-      background: "transparent",
-      border: "none",
-      cursor: parent.userId === currentUser.uid ? "default" : "pointer",
-      fontSize: 11,
-      color: parent.likes?.[currentUser.uid] ? "#e53935" : "#999",
-      opacity: parent.userId === currentUser.uid ? 0.4 : 1
-    }}
-  >
-    ❤️ {parent.likes ? Object.keys(parent.likes).length : 0}
-  </button>
-</div>
-       </div>
-         
-        </div>
-
-        <div style={{ display: "flex", gap: 6 }}>
-          <button
-  onClick={() => handleReply(parent)}
-  style={{
-  background: "transparent",
-  border: "none",
-  fontSize: 12,
-  cursor: "pointer",
-  color: "#666",
-  marginRight: 4,  // ← × ボタンとの距離
-  marginTop: 2     // ← 少し下げる
-}}
->
-  返信
-</button>
-
-          {(parent.userId === currentUser.uid || ownerUid === currentUser.uid) && (
-            <button
-              onClick={() => deleteComment(parent.id)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#e53935",
-                fontSize: 14,
-                cursor: "pointer"
-              }}
-            >
-              ×
-            </button>
-          )}
-        </div>
+  {/* 親コメント本体 */}
+  <div style={{ display:"flex", gap:6 }}>
+    <div style={{ cursor:"pointer" }} onClick={() => onClickUser(parent.userId)}>
+      <Avatar avatarUrl={parent.userAvatarUrl} avatar={parent.userAvatar} size={18} />
+    </div>
+    <div>
+      <div>
+        <span style={{ fontWeight:600, fontSize:13, color:"#4a6b54" }}>{parent.userName}</span>
+        <span style={{ fontSize:14, color:"#4a6b54" }}>：{parent.text}</span>
       </div>
-
+      <div style={{ fontSize:10, color:"#888", display:"flex", alignItems:"center", gap:6 }}>
+        <span style={timeStyle}>{parent.createdAt && formatDate(parent.createdAt)}</span>
+        <button
+          onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
+          disabled={parent.userId === currentUser.uid}
+          style={{ background:"transparent", border:"none", cursor: parent.userId === currentUser.uid ? "default" : "pointer", fontSize:11, color: parent.likes?.[currentUser.uid] ? "#e53935" : "#b0b0b0", opacity: parent.userId === currentUser.uid ? 0.4 : 1 }}
+        >
+          ❤️ {parent.likes ? Object.keys(parent.likes).length : 0}
+        </button>
+      </div>
+    </div>
+  </div>
       {/* 🔥 返信一覧 */}
       {repliesMap[parent.id] && (
         <div style={{ marginLeft: 24, marginTop: 4 }}>
           {repliesMap[parent.id].map((reply) => (
-            <div
-              key={reply.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: 4
-              }}
-            >
-              <div style={{ display: "flex", gap: 6 }}>
-                
-                <div
-                  style={{ cursor: "pointer" }}
-                  onClick={() => onClickUser(reply.userId)}
-                >
-                  <Avatar
-                    avatarUrl={reply.userAvatarUrl}
-                    avatar={reply.userAvatar}
-                    size={16}
-                  />
-                </div>
+            <div key={reply.id} style={{ marginBottom:4, position:"relative" }}>
 
-                <div>
-                  <div>
-                    <span style={{ fontWeight: 600, fontSize: 12, color: "#6b8f71" }}>{reply.userName}</span>
-<span style={{ fontSize: 13, color: "#5f7f68" }}>：{reply.text}</span>
-                  </div>
-<div
-  style={{
-    fontSize: 10,
-    color: "#888",
-    display: "flex",
-    alignItems: "center",
-    gap: 6
-  }}
->
-<span style={timeStyle}>{reply.createdAt && formatDate(reply.createdAt)}</span>
-  <button
-    onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
-    disabled={reply.userId === currentUser.uid}
-    style={{
-      background: "transparent",
-      border: "none",
-      cursor: reply.userId === currentUser.uid ? "default" : "pointer",
-      fontSize: 11,
-      color: reply.likes?.[currentUser.uid] ? "#e53935" : "#999",
-      opacity: reply.userId === currentUser.uid ? 0.4 : 1
-    }}
-  >
-    ❤️ {reply.likes ? Object.keys(reply.likes).length : 0}
-  </button>
+  {/* 右上アクションエリア（返信） */}
+  <div style={{ position:"absolute", top:0, right:0, display:"flex", alignItems:"center", gap:6 }}>
+    {(reply.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+      <button
+        onClick={() => deleteComment(reply.id)}
+        style={{ background:"transparent", border:"none", color:"#e53935", fontSize:14, cursor:"pointer" }}
+      >
+        ×
+      </button>
+    )}
+  </div>
+
+  {/* 返信本体 */}
+  <div style={{ display:"flex", gap:6 }}>
+    <div style={{ cursor:"pointer" }} onClick={() => onClickUser(reply.userId)}>
+      <Avatar avatarUrl={reply.userAvatarUrl} avatar={reply.userAvatar} size={16} />
+    </div>
+    <div>
+      <div>
+        <span style={{ fontWeight:600, fontSize:12, color:"#6b8f71" }}>{reply.userName}</span>
+        <span style={{ fontSize:13, color:"#5f7f68" }}>：{reply.text}</span>
+      </div>
+      <div style={{ fontSize:10, color:"#888", display:"flex", alignItems:"center", gap:6 }}>
+        <span style={timeStyle}>{reply.createdAt && formatDate(reply.createdAt)}</span>
+        <button
+          onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
+          disabled={reply.userId === currentUser.uid}
+          style={{ background:"transparent", border:"none", cursor: reply.userId === currentUser.uid ? "default" : "pointer", fontSize:11, color: reply.likes?.[currentUser.uid] ? "#e53935" : "#b0b0b0", opacity: reply.userId === currentUser.uid ? 0.4 : 1 }}
+        >
+          ❤️ {reply.likes ? Object.keys(reply.likes).length : 0}
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
-
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 6 }}>
-                
-
-                {(reply.userId === currentUser.uid || ownerUid === currentUser.uid) && (
-                  <button
-                    onClick={() => deleteComment(reply.id)}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: "#e53935",
-                      fontSize: 14,
-                      cursor: "pointer"
-                    }}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            </div>
           ))}
         </div>
       )}
