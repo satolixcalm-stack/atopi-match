@@ -649,8 +649,14 @@ const formatTime = (ts) => {
 
   // ↓ この関数をまるごと差し替える
 const handleNotificationClick = async (n) => {
+
   await markAsRead(n);
 
+
+// 🔥 画面に表示されてる投稿かチェック
+const el = document.getElementById(`post-${n.postId}`);
+const isVisible = !!el;
+  
   if (n.type === "profile_like" || n.type === "like") {
     const snap = await get(ref(db, "users/" + n.fromUserId));
     if (!snap.exists()) return;
@@ -661,24 +667,43 @@ const handleNotificationClick = async (n) => {
   } else if (n.type === "comment") {
 
     if (n.targetType === "comment") {
-      // 返信通知 → postDetail へ
+      // ② 返信通知 → postDetail画面へ
       if (n.postId) {
         setSelectedPostId(n.postId);
-        setHighlightedPostId(null);
-        setScreen("postDetail");
-        setTimeout(() => setHighlightedPostId(n.postId), 100);
-      }
+setScreen("postDetail");
 
-    } else {
-      // 投稿へのコメント通知 → mypage へ
-      setHighlightedPostId(null);
-      setScreen("mypage");
-      if (n.postId) {
-        setTimeout(() => setHighlightedPostId(n.postId), 0);
+setTimeout(() => {
+  const el = document.getElementById(`post-${n.postId}`);
+  if (el) {
+    el.style.background = "#fff3cd";
+    setTimeout(() => {
+      el.style.background = "";
+    }, 1200);
+  }
+}, 300);
       }
+   } else {
+  // ① 投稿コメント
+
+  if (isVisible) {
+    // 見えてる → スクロール
+    setHighlightedPostId(null);
+    setScreen("mypage");
+    if (n.postId) {
+      setTimeout(() => setHighlightedPostId(n.postId), 0);
     }
 
+  } else {
+    // 🔥 見えてない → 詳細ページへ
+    if (n.postId) {
+      setSelectedPostId(n.postId);
+    
+      setScreen("postDetail");
+    }
+  }
+}
   } else if (n.type === "post_like") {
+    // post_like は従来通りmypage
     setHighlightedPostId(null);
     setScreen("mypage");
     if (n.postId) {
