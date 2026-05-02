@@ -175,6 +175,7 @@ export default function App() {
   const [filterMode, setFilterMode] = useState("all");
   const [unreadChats, setUnreadChats] = useState({});
   const [selectedPostId, setSelectedPostId] = useState(null);
+  const [hoveredUid, setHoveredUid] = useState(null);
 
   // ── アバター用 state
   const [avatarFile, setAvatarFile] = useState(null);       // 選択中の画像ファイル
@@ -1041,7 +1042,20 @@ if (screen === "postDetail") {
           const tl = profileTimelines[p.uid] || [];
           const tlPage = profileTimelinePages[p.uid] || 0;
           return (
-            <div key={p.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
+          <div
+  key={p.uid}
+  onMouseEnter={() => setHoveredUid(p.uid)}
+  onMouseLeave={() => setHoveredUid(null)}
+  style={{
+    background: hoveredUid === p.uid ? "#e6f4ea" : "#fff",
+    borderRadius: 18,
+    boxShadow: "0 2px 14px rgba(61,107,79,0.08)",
+    overflow: "hidden",
+    transform: hoveredUid === p.uid ? "scale(0.99)" : "scale(1)",
+    transition: "transform 0.15s ease, background 0.15s ease",
+    cursor: "pointer",
+  }}
+>
               <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px" }} onClick={() => toggleExpand(p.uid)}>
                 {/* 画像→絵文字の順で自動判定して表示 */}
                 <AvatarImg avatarUrl={p.avatarUrl} emoji={p.avatar} size={50} />
@@ -1057,14 +1071,15 @@ if (screen === "postDetail") {
                   </button>
                   {matches[p.uid] && <button onClick={e => { e.stopPropagation(); setChatTarget(matches[p.uid]); setScreen("chat"); }} style={{ background:"#52a875",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>💬 チャット</button>}
                  
-                  <div style={{
-    fontSize: 18,
-    color: "#a8c5b0",
-    transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
-    transition: "transform 0.25s ease",
-    lineHeight: 1,
-    userSelect: "none"
-  }}>›</div>
+                 <div style={{
+  fontSize: 22,
+  color: "#52a875",
+  // 回転とホバー拡大を1つのtransformにまとめる
+  transform: `rotate(${isExpanded ? 90 : 0}deg) scale(${hoveredUid === p.uid ? 1.1 : 1})`,
+  transition: "transform 0.25s ease",
+  lineHeight: 1,
+  userSelect: "none",
+}}>›</div>
 </div>
               </div>
               {isExpanded && (
@@ -1114,7 +1129,20 @@ if (screen === "postDetail") {
               const tlPage = profileTimelinePages[m.uid] || 0;
               const { commons: mCommons } = myProfile ? calcScore(myProfile, m) : { commons: [] };
               return (
-                <div key={m.uid} style={{ background:"#fff",borderRadius:18,boxShadow:"0 2px 14px rgba(61,107,79,0.08)",overflow:"hidden" }}>
+                <div
+  key={m.uid}
+  onMouseEnter={() => setHoveredUid(m.uid)}
+  onMouseLeave={() => setHoveredUid(null)}
+  style={{
+    background: hoveredUid === m.uid ? "#e6f4ea" : "#fff",
+    borderRadius: 18,
+    boxShadow: "0 2px 14px rgba(61,107,79,0.08)",
+    overflow: "hidden",
+    transform: hoveredUid === m.uid ? "scale(0.99)" : "scale(1)",
+    transition: "transform 0.15s ease, background 0.15s ease",
+    cursor: "pointer",
+  }}
+>
                   <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }} onClick={() => toggleExpand(m.uid)}>
                     <AvatarImg avatarUrl={m.avatarUrl} emoji={m.avatar} size={50} />
                     <div style={{ flex:1 }}>
@@ -1127,13 +1155,13 @@ if (screen === "postDetail") {
                       <button onClick={e => { e.stopPropagation(); setChatTarget(m); setScreen("chat"); }} style={{ background:"#52a875",border:"none",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",color:"#fff" }}>💬 チャット</button>
                       {unreadChats[m.uid] && <span style={{ fontSize:10,color:"#e57373",fontWeight:700 }}>🔴 新着あり</span>}
                    <div style={{
-    fontSize: 18,
-    color: "#a8c5b0",
-    transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
-    transition: "transform 0.25s ease",
-    lineHeight: 1,
-    userSelect: "none"
-  }}>›</div>
+  fontSize: 22,
+  color: "#52a875",
+  transform: `rotate(${isExpanded ? 90 : 0}deg) scale(${hoveredUid === m.uid ? 1.1 : 1})`,
+  transition: "transform 0.25s ease",
+  lineHeight: 1,
+  userSelect: "none",
+}}>›</div>
 </div>
                     </div> 
                   {isExpanded && (
