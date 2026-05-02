@@ -374,127 +374,124 @@ comments.forEach(c => {
       )}
 
 
-      {/* コメント */}
     {/* コメント */}
 <div style={{ marginTop: 10 }}>
   {parentComments.map((parent) => (
-   <div key={parent.id} style={{ marginBottom:10, position:"relative" }}>
+    <div key={parent.id} style={{ marginBottom:10, position:"relative" }}>
 
-  {/* 右上アクションエリア（コメント） */}
-  <div style={{ position:"absolute", top:0, right:0, display:"flex", alignItems:"center", gap:6 }}>
-    <button
-      onClick={() => handleReply(parent)}
-      style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer", color:"#666" }}
-    >
-      返信
-    </button>
-    {(parent.userId === currentUser.uid || ownerUid === currentUser.uid) && (
-      <button
-        onClick={() => deleteComment(parent.id)}
-        style={{ background:"transparent", border:"none", color:"#e53935", fontSize:14, cursor:"pointer" }}
-      >
-        ×
-      </button>
-    )}
-  </div>
+      {/* 右上アクション */}
+      <div style={{ position:"absolute", top:0, right:0, display:"flex", gap:6 }}>
+        <button
+          onClick={() => handleReply(parent)}
+          style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer" }}
+        >
+          返信
+        </button>
 
-  {/* 親コメント本体 */}
-<div style={{ display:"flex", gap:6 }}>
-  <div onClick={...}>
-    <Avatar ... />
-  </div>
+        {(parent.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+          <button
+            onClick={() => deleteComment(parent.id)}
+            style={{ background:"transparent", border:"none", color:"#e53935", fontSize:14 }}
+          >
+            ×
+          </button>
+        )}
+      </div>
 
-  {/* 右側まとめる */}
-  <div style={{ maxWidth: "calc(100% - 80px)" }}>
+      {/* 本体 */}
+      <div style={{ display:"flex", gap:6 }}>
+        
+        {/* アバター */}
+        <div onClick={() => onClickUser(parent.userId)} style={{ cursor:"pointer" }}>
+          <Avatar avatarUrl={parent.userAvatarUrl} avatar={parent.userAvatar} size={18} />
+        </div>
 
-    {/* 名前 */}
-    <div style={{ fontWeight:600, fontSize:13, color:"#4a6b54" }}>
-      {parent.userName}
-    </div>
+        {/* 右側まとめ */}
+        <div style={{ maxWidth: "calc(100% - 80px)" }}>
 
-    {/* 本文 */}
-    <div style={{ fontSize:14, color:"#4a6b54", wordBreak:"break-word" }}>
-      {parent.text}
-    </div>
+          {/* 名前 */}
+          <div style={{ fontWeight:600, fontSize:13, color:"#4a6b54" }}>
+            {parent.userName}
+          </div>
 
-    {/* 時間＋いいね（ここに入れる） */}
-    <div style={{ fontSize:10, color:"#888", display:"flex", gap:6 }}>
-      <span style={timeStyle}>{formatDate(parent.createdAt)}</span>
-      <button ...>❤️ ...</button>
-    </div>
+          {/* 本文 */}
+          <div style={{ fontSize:14, color:"#4a6b54", wordBreak:"break-word" }}>
+            {parent.text}
+          </div>
 
-  </div>
-</div>
-      {/* 🔥 返信一覧 */}
+          {/* 時間＋いいね */}
+          <div style={{ fontSize:10, color:"#888", display:"flex", gap:6 }}>
+            <span>{formatDate(parent.createdAt)}</span>
+
+            <button
+              onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
+              style={{ background:"transparent", border:"none", fontSize:11 }}
+            >
+              ❤️ {parent.likes ? Object.keys(parent.likes).length : 0}
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* 返信 */}
       {repliesMap[parent.id] && (
         <div style={{ marginLeft: 24, marginTop: 4 }}>
           {repliesMap[parent.id].map((reply) => (
             <div key={reply.id} style={{ marginBottom:4, position:"relative" }}>
 
-  {/* 右上アクションエリア（返信） */}
-  <div style={{ position:"absolute", top:0, right:0, display:"flex", alignItems:"center", gap:6 }}>
-    {(reply.userId === currentUser.uid || ownerUid === currentUser.uid) && (
-      <button
-        onClick={() => deleteComment(reply.id)}
-        style={{ background:"transparent", border:"none", color:"#e53935", fontSize:14, cursor:"pointer" }}
-      >
-        ×
-      </button>
-    )}
-  </div>
+              {/* 右上削除 */}
+              {(reply.userId === currentUser.uid || ownerUid === currentUser.uid) && (
+                <button
+                  onClick={() => deleteComment(reply.id)}
+                  style={{
+                    position:"absolute",
+                    top:0,
+                    right:0,
+                    background:"transparent",
+                    border:"none",
+                    color:"#e53935"
+                  }}
+                >
+                  ×
+                </button>
+              )}
 
-  {/* 返信本体 */}
-<div style={{ display:"flex", gap:6 }}>
-  <div style={{ cursor:"pointer" }} onClick={() => onClickUser(reply.userId)}>
-    <Avatar avatarUrl={reply.userAvatarUrl} avatar={reply.userAvatar} size={16} />
-  </div>
+              <div style={{ display:"flex", gap:6 }}>
+                
+                <div onClick={() => onClickUser(reply.userId)} style={{ cursor:"pointer" }}>
+                  <Avatar avatarUrl={reply.userAvatarUrl} avatar={reply.userAvatar} size={16} />
+                </div>
 
-  {/* 右側まとめる（←ここが重要） */}
-  <div style={{ maxWidth: "calc(100% - 80px)" }}>
+                <div style={{ maxWidth: "calc(100% - 80px)" }}>
 
-    {/* 名前 */}
-    <div style={{ fontWeight:600, fontSize:12, color:"#6b8f71" }}>
-      {reply.userName}
-    </div>
+                  <div style={{ fontWeight:600, fontSize:12, color:"#6b8f71" }}>
+                    {reply.userName}
+                  </div>
 
-    {/* 本文 */}
-    <div
-      style={{
-        fontSize:13,
-        color:"#5f7f68",
-        wordBreak: "break-word"
-      }}
-    >
-      {reply.text}
-    </div>
+                  <div style={{ fontSize:13, color:"#5f7f68", wordBreak:"break-word" }}>
+                    {reply.text}
+                  </div>
 
-    {/* 時間＋いいね（ここに入れる） */}
-    <div style={{ fontSize:10, color:"#888", display:"flex", alignItems:"center", gap:6 }}>
-      <span style={timeStyle}>{reply.createdAt && formatDate(reply.createdAt)}</span>
+                  <div style={{ fontSize:10, color:"#888", display:"flex", gap:6 }}>
+                    <span>{formatDate(reply.createdAt)}</span>
 
-      <button
-        onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
-        disabled={reply.userId === currentUser.uid}
-        style={{
-          background:"transparent",
-          border:"none",
-          cursor: reply.userId === currentUser.uid ? "default" : "pointer",
-          fontSize:11,
-          color: reply.likes?.[currentUser.uid] ? "#e53935" : "#b0b0b0",
-          opacity: reply.userId === currentUser.uid ? 0.4 : 1
-        }}
-      >
-        ❤️ {reply.likes ? Object.keys(reply.likes).length : 0}
-      </button>
-    </div>
+                    <button
+                      onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
+                      style={{ background:"transparent", border:"none", fontSize:11 }}
+                    >
+                      ❤️ {reply.likes ? Object.keys(reply.likes).length : 0}
+                    </button>
+                  </div>
 
-  </div>
-</div>
+                </div>
+              </div>
 
-</div>
+            </div>
           ))}
         </div>
       )}
+
     </div>
   ))}
 </div>
