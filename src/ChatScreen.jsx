@@ -225,7 +225,7 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
       >
         {/* 相手のアバター（左側に表示） */}
         {!isMe && (
-         {chatTarget.avatarUrl ? (
+         chatTarget.avatarUrl ? (
   <img src={chatTarget.avatarUrl} alt="avatar"
     style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"1px solid #c8e6c9" }} />
 ) : (
