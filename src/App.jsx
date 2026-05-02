@@ -1432,7 +1432,7 @@ if (screen === "postDetail") {
 
 const S = {
   app:{ minHeight:"100vh",background:"#f0f7f2",fontFamily:"'Hiragino Sans','Yu Gothic',sans-serif",display:"flex",justifyContent:"center" },
-  page:{ width:"100%",maxWidth:420,display:"flex",flexDirection:"column",minHeight:"100vh" },
+  page:{ width:"100%", maxWidth:420, display:"flex", flexDirection:"column", minHeight:"100vh", paddingBottom:80 },
   card:{ background:"#fff",borderRadius:20,padding:24,boxShadow:"0 4px 24px rgba(61,107,79,0.08)" },
   tabRow:{ display:"flex",marginBottom:16,borderRadius:12,overflow:"hidden",border:"1.5px solid #c8e6c9" },
   tab:{ flex:1,padding:"10px 0",background:"transparent",border:"none",color:"#6b8f71",fontSize:14,cursor:"pointer" },
@@ -1452,6 +1452,6 @@ const S = {
   infoChip:{ background:"#f0f7f2",color:"#6b8f71",borderRadius:20,padding:"3px 11px",fontSize:11,border:"1px solid #c8e6c9" },
   empty:{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40,textAlign:"center" },
   matchRow:{ background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(61,107,79,0.06)",cursor:"pointer" },
-  nav:{ display:"flex",borderTop:"1px solid #e8f5e9",background:"#fff",flexShrink:0 },
+  nav:{ display:"flex", borderTop:"1px solid #e8f5e9", background:"#fff", position:"fixed", bottom:0, left:0, width:"100%", zIndex:100 },
   navBtn:{ flex:1,padding:"12px 0",background:"none",border:"none",borderTop:"2px solid transparent",color:"#6b8f71",fontSize:12,cursor:"pointer" },
 };
