@@ -1094,11 +1094,7 @@ if (n.postId) {
         <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>
           {formatTime(n.createdAt)}
         </div>
-      </div>
-
-      <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
-    </button>
-  ))}
+    
 
   {/* 🔥 ここが正しい位置 */}
   {notifications.length > visibleCount && (
