@@ -1040,62 +1040,87 @@ if (n.postId) {
         {notifications.length > 0 && (
           <div style={S.card}>
             <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
-            <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-              
-              {notifications.slice(0, visibleCount).map(n => (
-  <button
-    key={n.id}
-    onClick={() => handleNotificationClick(n)}
-    onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
-    onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-    style={{
-      display:"flex",
-      alignItems:"center",
-      gap:10,
-      padding:"8px 12px",
-      background:n.read?"#f0f7f2":"#e8f5e9",
-      borderRadius:12,
-      border:n.read?"none":"1.5px solid #c8e6c9",
-      cursor:"pointer",
-      width:"100%",
-      textAlign:"left"
-    }}
-  >
-    <span style={{ fontSize:22,flexShrink:0,position:"relative" }}>
-      {n.fromUserAvatar}
-      {!n.read && (
-        <span style={{
-          position:"absolute",
-          top:-2,
-          right:-2,
-          width:8,
-          height:8,
-          background:"#e57373",
-          borderRadius:"50%",
-          display:"block"
-        }} />
-      )}
-    </span>
+          <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
 
-    <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
-      <strong>{n.fromUserName}</strong>さんが
+  {notifications.slice(0, visibleCount).map(n => (
+    <button
+      key={n.id}
+      onClick={() => handleNotificationClick(n)}
+      onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+      onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+      style={{
+        display:"flex",
+        alignItems:"center",
+        gap:10,
+        padding:"8px 12px",
+        background:n.read?"#f0f7f2":"#e8f5e9",
+        borderRadius:12,
+        border:n.read?"none":"1.5px solid #c8e6c9",
+        cursor:"pointer",
+        width:"100%",
+        textAlign:"left"
+      }}
+    >
+      <span style={{ fontSize:22,flexShrink:0,position:"relative" }}>
+        {n.fromUserAvatar}
+        {!n.read && (
+          <span style={{
+            position:"absolute",
+            top:-2,
+            right:-2,
+            width:8,
+            height:8,
+            background:"#e57373",
+            borderRadius:"50%"
+          }} />
+        )}
+      </span>
 
-      {n.type === "profile_like" || n.type === "like"
-        ? "🌿 あなたに共感しています"
-        : (
-          "💬 " +
-          (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") +
-          (n.count && n.count > 1
-            ? `に${n.count}件コメントしました`
-            : "にコメントしました"
+      <div style={{ fontSize:13,color:"#4a6b54",flex:1 }}>
+        <strong>{n.fromUserName}</strong>さんが
+
+        {n.type === "profile_like" || n.type === "like"
+          ? "🌿 あなたに共感しています"
+          : (
+            "💬 " +
+            (n.postText ? "「" + n.postText + "...」" : "あなたの投稿") +
+            (n.count && n.count > 1
+              ? `に${n.count}件コメントしました`
+              : "にコメントしました"
+            )
           )
-        )
-      }
+        }
 
-      <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>
-        {formatTime(n.createdAt)}
+        <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>
+          {formatTime(n.createdAt)}
+        </div>
       </div>
-    </div>
+
+      <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
+    </button>
+  ))}
+
+  {/* 🔥 ここが正しい位置 */}
+  {notifications.length > visibleCount && (
+    <button
+      onClick={() => setVisibleCount(v => v + 5)}
+      style={{
+        width:"100%",
+        background:"#f0f7f2",
+        color:"#52a875",
+        border:"1.5px solid #c8e6c9",
+        borderRadius:10,
+        padding:"8px 0",
+        fontSize:13,
+        fontWeight:700,
+        cursor:"pointer"
+      }}
+    >
+      もっと見る
+    </button>
+  )}
+
+</div>
 
     <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
   </button>
