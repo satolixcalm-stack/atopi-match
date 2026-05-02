@@ -299,7 +299,7 @@ comments.forEach(c => {
         userName: ownerUser?.name || "投稿者",
         id: post.id
       })}
-      style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer", color:"#333" }}
+      style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer", color:"#2f4f3f"  }}
     >
       返信
     </button>
@@ -383,7 +383,7 @@ comments.forEach(c => {
       <div style={{ position:"absolute", top:0, right:6, width:60, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:6 }}>
         <button
           onClick={() => handleReply(parent)}
-          style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer" }}
+          style={{ background:"transparent", border:"none", fontSize:12, cursor:"pointer",whiteSpace: "nowrap"    }}
         >
           返信
         </button>
