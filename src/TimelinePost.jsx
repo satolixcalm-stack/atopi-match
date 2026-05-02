@@ -306,22 +306,34 @@ comments.forEach(c => {
   </button>
 )}
       {/* 🔥 投稿者表示 */}
-      {ownerUser && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 8
-          }}
-        >
-          <Avatar
-            avatarUrl={ownerUser.avatarUrl}
-            avatar={ownerUser.avatar}
-          />
-          <span style={{ fontWeight: 700 }}>{ownerUser.name}</span>
-        </div>
-      )}
+  {ownerUser && (
+  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+      <Avatar avatarUrl={ownerUser.avatarUrl} avatar={ownerUser.avatar} />
+      <span style={{ fontWeight: 700 }}>{ownerUser.name}</span>
+    </div>
+
+    {/* 投稿への返信ボタン */}
+    {!isOwner && (
+      <button
+        onClick={() => handleReply({
+          userId: ownerUid,
+          userName: ownerUser.name,
+          id: post.id
+        })}
+        style={{
+          background: "transparent",
+          border: "none",
+          fontSize: 12,
+          cursor: "pointer",
+          color: "#666"
+        }}
+      >
+        返信
+      </button>
+    )}
+  </div>
+)}
 
       {/* 投稿内容 */}
       <div style={{ fontSize: 14 }}>{post.text}</div>
@@ -361,26 +373,7 @@ comments.forEach(c => {
         <Avatar avatarUrl={u.avatarUrl} avatar={u.avatar} size={16} />
       </div>
     ))}
-     {/* ↓ 投稿への返信ボタンを追加 */}
-  {!isOwner && (
-    <button
-      onClick={() => handleReply({
-        userId: ownerUid,
-        userName: ownerUser?.name || "投稿者",
-        id: post.id
-      })}
-      style={{
-        background: "transparent",
-        border: "none",
-        fontSize: 11,
-        cursor: "pointer",
-        color: "#52a875",
-        fontWeight: 700
-      }}
-    >
-      返信
-    </button>
-  )}
+    
 </div>
   </div>
       {post.imageUrl && (
