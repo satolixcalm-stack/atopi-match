@@ -223,19 +223,21 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
           gap: 6,
         }}
       >
-        {/* 相手のアバター（左側に表示） */}
-        {!isMe && (
-         chatTarget.avatarUrl ? (
-  <img src={chatTarget.avatarUrl} alt="avatar"
-    style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"1px solid #c8e6c9" }} />
-) : (
-  <div style={{
-    fontSize: 18, width: 30, height: 30,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    background: "#fff", borderRadius: "50%", flexShrink: 0,
-  }}>
-    {chatTarget.avatar}
-  </div>
+        
+       {/* 相手のアバター（左側に表示） */}
+{!isMe && (
+  chatTarget.avatarUrl ? (
+    <img src={chatTarget.avatarUrl} alt="avatar"
+      style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"1px solid #c8e6c9" }} />
+  ) : (
+    <div style={{
+      fontSize: 18, width: 30, height: 30,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      background: "#fff", borderRadius: "50%", flexShrink: 0,
+    }}>
+      {chatTarget.avatar}
+    </div>
+  )
 )}
         )}
 
