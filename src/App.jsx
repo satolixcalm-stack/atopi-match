@@ -1135,6 +1135,7 @@ if (screen === "postDetail") {
     userSelect: "none"
   }}>›</div>
 </div>
+                    </div> 
                   {isExpanded && (
                     <div style={{ padding:"0 16px 14px",borderTop:"1px solid #f0f7f2" }}>
                       {m.triggers?.length > 0 && <><div style={S.secLabel}>悪化因子</div><div style={S.chips}>{m.triggers.map(t => <span key={t} style={S.infoChip}>{t}</span>)}</div></>}
