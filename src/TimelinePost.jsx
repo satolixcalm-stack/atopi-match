@@ -399,41 +399,32 @@ comments.forEach(c => {
   </div>
 
   {/* 親コメント本体 */}
-  <div style={{ display:"flex", gap:6 }}>
-    <div style={{ cursor:"pointer" }} onClick={() => onClickUser(parent.userId)}>
-      <Avatar avatarUrl={parent.userAvatarUrl} avatar={parent.userAvatar} size={18} />
+<div style={{ display:"flex", gap:6 }}>
+  <div onClick={...}>
+    <Avatar ... />
+  </div>
+
+  {/* 右側まとめる */}
+  <div style={{ maxWidth: "calc(100% - 80px)" }}>
+
+    {/* 名前 */}
+    <div style={{ fontWeight:600, fontSize:13, color:"#4a6b54" }}>
+      {parent.userName}
     </div>
-    <div style={{ maxWidth: "calc(100% - 80px)" }}>
 
-  {/* 名前 */}
-  <div style={{ fontWeight:600, fontSize:13, color:"#4a6b54" }}>
-    {parent.userName}
+    {/* 本文 */}
+    <div style={{ fontSize:14, color:"#4a6b54", wordBreak:"break-word" }}>
+      {parent.text}
+    </div>
+
+    {/* 時間＋いいね（ここに入れる） */}
+    <div style={{ fontSize:10, color:"#888", display:"flex", gap:6 }}>
+      <span style={timeStyle}>{formatDate(parent.createdAt)}</span>
+      <button ...>❤️ ...</button>
+    </div>
+
   </div>
-
-  {/* 本文 */}
-  <div
-    style={{
-      fontSize:14,
-      color:"#4a6b54",
-      wordBreak: "break-word"
-    }}
-  >
-    {parent.text}
-  </div>
-
 </div>
-      <div style={{ fontSize:10, color:"#888", display:"flex", alignItems:"center", gap:6 }}>
-        <span style={timeStyle}>{parent.createdAt && formatDate(parent.createdAt)}</span>
-        <button
-          onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
-          disabled={parent.userId === currentUser.uid}
-          style={{ background:"transparent", border:"none", cursor: parent.userId === currentUser.uid ? "default" : "pointer", fontSize:11, color: parent.likes?.[currentUser.uid] ? "#e53935" : "#b0b0b0", opacity: parent.userId === currentUser.uid ? 0.4 : 1 }}
-        >
-          ❤️ {parent.likes ? Object.keys(parent.likes).length : 0}
-        </button>
-      </div>
-    </div>
-  </div>
       {/* 🔥 返信一覧 */}
       {repliesMap[parent.id] && (
         <div style={{ marginLeft: 24, marginTop: 4 }}>
@@ -453,39 +444,52 @@ comments.forEach(c => {
   </div>
 
   {/* 返信本体 */}
-  <div style={{ display:"flex", gap:6 }}>
-    <div style={{ cursor:"pointer" }} onClick={() => onClickUser(reply.userId)}>
-      <Avatar avatarUrl={reply.userAvatarUrl} avatar={reply.userAvatar} size={16} />
+<div style={{ display:"flex", gap:6 }}>
+  <div style={{ cursor:"pointer" }} onClick={() => onClickUser(reply.userId)}>
+    <Avatar avatarUrl={reply.userAvatarUrl} avatar={reply.userAvatar} size={16} />
+  </div>
+
+  {/* 右側まとめる（←ここが重要） */}
+  <div style={{ maxWidth: "calc(100% - 80px)" }}>
+
+    {/* 名前 */}
+    <div style={{ fontWeight:600, fontSize:12, color:"#6b8f71" }}>
+      {reply.userName}
     </div>
-   <div style={{ maxWidth: "calc(100% - 80px)" }}>
-  
-  <div style={{ fontWeight:600, fontSize:12, color:"#6b8f71" }}>
-    {reply.userName}
-  </div>
 
-  <div
-    style={{
-      fontSize:13,
-      color:"#5f7f68",
-      wordBreak: "break-word"
-    }}
-  >
-    {reply.text}
-  </div>
+    {/* 本文 */}
+    <div
+      style={{
+        fontSize:13,
+        color:"#5f7f68",
+        wordBreak: "break-word"
+      }}
+    >
+      {reply.text}
+    </div>
 
+    {/* 時間＋いいね（ここに入れる） */}
+    <div style={{ fontSize:10, color:"#888", display:"flex", alignItems:"center", gap:6 }}>
+      <span style={timeStyle}>{reply.createdAt && formatDate(reply.createdAt)}</span>
+
+      <button
+        onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
+        disabled={reply.userId === currentUser.uid}
+        style={{
+          background:"transparent",
+          border:"none",
+          cursor: reply.userId === currentUser.uid ? "default" : "pointer",
+          fontSize:11,
+          color: reply.likes?.[currentUser.uid] ? "#e53935" : "#b0b0b0",
+          opacity: reply.userId === currentUser.uid ? 0.4 : 1
+        }}
+      >
+        ❤️ {reply.likes ? Object.keys(reply.likes).length : 0}
+      </button>
+    </div>
+
+  </div>
 </div>
-      <div style={{ fontSize:10, color:"#888", display:"flex", alignItems:"center", gap:6 }}>
-        <span style={timeStyle}>{reply.createdAt && formatDate(reply.createdAt)}</span>
-        <button
-          onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
-          disabled={reply.userId === currentUser.uid}
-          style={{ background:"transparent", border:"none", cursor: reply.userId === currentUser.uid ? "default" : "pointer", fontSize:11, color: reply.likes?.[currentUser.uid] ? "#e53935" : "#b0b0b0", opacity: reply.userId === currentUser.uid ? 0.4 : 1 }}
-        >
-          ❤️ {reply.likes ? Object.keys(reply.likes).length : 0}
-        </button>
-      </div>
-    </div>
-  </div>
 
 </div>
           ))}
