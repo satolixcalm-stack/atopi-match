@@ -1051,7 +1051,7 @@ if (screen === "postDetail") {
     borderRadius: 18,
     boxShadow: "0 2px 14px rgba(61,107,79,0.08)",
     overflow: "hidden",
-    transform: hoveredUid === p.uid ? "scale(0.99)" : "scale(1)",
+    transform: hoveredUid === p.uid ? "scale(0.995)" : "scale(1)",
     transition: "transform 0.15s ease, background 0.15s ease",
     cursor: "pointer",
   }}
