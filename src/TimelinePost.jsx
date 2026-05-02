@@ -285,7 +285,7 @@ comments.forEach(c => {
   style={{
     padding: "12px",
     background: isHighlighted ? "#fff3cd" : "#f0f7f2",
-　　transition: "0.3s",
+    transition: "0.3s",
     borderRadius: 12,
     position: "relative" // ←ここ追加
   }}
