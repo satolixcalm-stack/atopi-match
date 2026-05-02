@@ -324,12 +324,14 @@ comments.forEach(c => {
           id: post.id
         })}
         style={{
-          background: "transparent",
-          border: "none",
-          fontSize: 12,
-          cursor: "pointer",
-          color: "#666"
-        }}
+  background: "transparent",
+  border: "none",
+  fontSize: 12,
+  cursor: "pointer",
+  color: "#666",
+  marginRight: 24,  // ← × ボタンとの距離
+  marginTop: 2      // ← 少し下げる
+}}
       >
         返信
       </button>
@@ -451,12 +453,14 @@ comments.forEach(c => {
           <button
   onClick={() => handleReply(parent)}
   style={{
-    background: "transparent",
-    border: "none",
-    fontSize: 12,
-    cursor: "pointer",
-    color: "#666"
-  }}
+  background: "transparent",
+  border: "none",
+  fontSize: 12,
+  cursor: "pointer",
+  color: "#666",
+  marginRight: 4,  // ← × ボタンとの距離
+  marginTop: 2     // ← 少し下げる
+}}
 >
   返信
 </button>
