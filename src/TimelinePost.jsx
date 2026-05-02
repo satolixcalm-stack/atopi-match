@@ -264,6 +264,7 @@ comments.forEach(c => {
 });
   return (
   <div
+  id={`post-${post.id}`}   
   ref={postRef}
   style={{
     padding: "12px",
