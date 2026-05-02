@@ -322,7 +322,7 @@ comments.forEach(c => {
   </div>
 )}
       {/* 投稿内容 */}
-     <div style={{ fontSize: 16, color: "#2f4f3f", fontWeight: 500, lineHeight: 1.6, maxWidth: "calc(100% - 80px)", wordBreak: "break-word" }}>{post.text}</div>
+     <div style={{ fontSize: 16, color: "#2f4f3f", fontWeight: 500, lineHeight: 1.6, wordBreak: "break-word" }}>{post.text}</div>
 <div
   style={{
     fontSize: 11,
