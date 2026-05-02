@@ -754,9 +754,6 @@ const handleNotificationClick = async (n) => {
  // ↓ ここから追加（viewProfile の if 文の直前）
 
 if (screen === "postDetail") {
-  // ① まず自分のタイムラインから探す
-  // ② なければFirebaseから取得する
-  const post = myTimeline.find(p => p.id === selectedPostId);
 
   return (
     <div style={S.app}><div style={S.page}>
