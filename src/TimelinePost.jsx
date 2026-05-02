@@ -310,7 +310,7 @@ comments.forEach(c => {
   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
       <Avatar avatarUrl={ownerUser.avatarUrl} avatar={ownerUser.avatar} />
-      <span style={{ fontWeight: 700 }}>{ownerUser.name}</span>
+      <span style={{ fontWeight: 700, fontSize: 15, color: "#2f4f3f" }}>{ownerUser.name}</span>
     </div>
 
     {/* 投稿への返信ボタン */}
@@ -336,7 +336,7 @@ comments.forEach(c => {
 )}
 
       {/* 投稿内容 */}
-      <div style={{ fontSize: 14 }}>{post.text}</div>
+      <div style={{ fontSize: 16, color: "#2f4f3f", fontWeight: 500, lineHeight: 1.6 }}>{post.text}</div>
 <div
   style={{
     fontSize: 11,
@@ -411,7 +411,8 @@ comments.forEach(c => {
 
           <div>
             <div>
-              <b>{parent.userName}</b>：{parent.text}
+              <span style={{ fontWeight: 600, fontSize: 13, color: "#4a6b54" }}>{parent.userName}</span>
+<span style={{ fontSize: 14, color: "#4a6b54" }}>：{parent.text}</span>
             </div>
 
          <div
@@ -423,7 +424,7 @@ comments.forEach(c => {
     gap: 6   // ←これが重要
   }}
 >
-  <span>{parent.createdAt && formatDate(parent.createdAt)}</span>
+  <span style={{ color: "#a8c5b0" }}>{parent.createdAt && formatDate(parent.createdAt)}</span>
 
   <button
     onClick={() => toggleCommentLike(parent.id, parent.likes, parent.userId)}
@@ -502,7 +503,8 @@ comments.forEach(c => {
 
                 <div>
                   <div>
-                    <b>{reply.userName}</b>：{reply.text}
+                    <span style={{ fontWeight: 600, fontSize: 12, color: "#6b8f71" }}>{reply.userName}</span>
+<span style={{ fontSize: 13, color: "#6b8f71" }}>：{reply.text}</span>
                   </div>
 <div
   style={{
@@ -513,8 +515,7 @@ comments.forEach(c => {
     gap: 6
   }}
 >
-  <span>{reply.createdAt && formatDate(reply.createdAt)}</span>
-
+ <span style={{ color: "#a8c5b0" }}>{reply.createdAt && formatDate(reply.createdAt)}</span>
   <button
     onClick={() => toggleCommentLike(reply.id, reply.likes, reply.userId)}
     disabled={reply.userId === currentUser.uid}
