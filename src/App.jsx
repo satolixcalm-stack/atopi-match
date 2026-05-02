@@ -652,17 +652,16 @@ const handleNotificationClick = async (n) => {
 
   await markAsRead(n);
 
+
+// 🔥 画面に表示されてる投稿かチェック
 let isVisible = false;
 
 if (Array.isArray(myTimeline)) {
   const visiblePosts = myTimeline.slice(0, visibleCount || 0);
-  isVisible = visiblePosts.some(p => String(p.id) === String(n.postId));
+  isVisible = visiblePosts.some(
+    p => String(p.id) === String(n.postId)
+  );
 }
-  
-// 🔥 画面に表示されてる投稿かチェック
-const isVisible = myTimeline
-  .slice(0, visibleCount)
-  .some(p => p.id === n.postId);
   
   if (n.type === "profile_like" || n.type === "like") {
     const snap = await get(ref(db, "users/" + n.fromUserId));
