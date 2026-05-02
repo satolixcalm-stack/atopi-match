@@ -670,8 +670,17 @@ const isVisible = !!el;
       // ② 返信通知 → postDetail画面へ
       if (n.postId) {
         setSelectedPostId(n.postId);
-        setScreen("postDetail");
+setScreen("postDetail");
 
+setTimeout(() => {
+  const el = document.getElementById(`post-${n.postId}`);
+  if (el) {
+    el.style.background = "#fff3cd";
+    setTimeout(() => {
+      el.style.background = "";
+    }, 1200);
+  }
+}, 300);
       }
    } else {
   // ① 投稿コメント
