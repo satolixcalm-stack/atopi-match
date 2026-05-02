@@ -1210,10 +1210,10 @@ if (screen === "postDetail") {
         )}
       </div>
       <div style={S.nav}>
-        <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
-        <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>💚 マッチ</button>
-        <button style={S.navBtn} onClick={() => setScreen("mypage")}>👤 マイページ</button>
-      </div>
+  <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
+  <button style={{ ...S.navBtn, color:"#52a875", borderTop:"2px solid #52a875" }}>💚 マッチ ({Object.keys(matches).length})</button>
+  <button style={S.navBtn} onClick={() => setScreen("mypage")}>👤 マイページ{unreadCount > 0 ? <span style={{ marginLeft:4, background:"#e57373", color:"#fff", borderRadius:"50%", fontSize:10, padding:"1px 5px", fontWeight:700 }}>{unreadCount}</span> : ""}</button>
+</div>
     </div></div>
   );
 
@@ -1420,11 +1420,11 @@ if (screen === "postDetail") {
           </div>
         </div>
       </div>
-      <div style={S.nav}>
-        <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
-        <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ</button>
-        <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>👤 マイページ</button>
-      </div>
+     <div style={S.nav}>
+  <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
+  <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ ({Object.keys(matches).length})</button>
+  <button style={{ ...S.navBtn, color:"#52a875", borderTop:"2px solid #52a875" }}>👤 マイページ{unreadCount > 0 ? <span style={{ marginLeft:4, background:"#e57373", color:"#fff", borderRadius:"50%", fontSize:10, padding:"1px 5px", fontWeight:700 }}>{unreadCount}</span> : ""}</button>
+</div>
       {toastEl}
     </div></div>
   );
