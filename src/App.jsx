@@ -679,7 +679,6 @@ const formatTime = (ts) => {
 };
 
   if (Object.keys(updates).length > 0) {
-    const { update } = await import("firebase/database");
     await update(ref(db, "/"), updates);
   }
 };
