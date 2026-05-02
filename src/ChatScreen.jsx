@@ -238,7 +238,7 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
       {chatTarget.avatar}
     </div>
   )
-)}
+
         )}
 
         {/* ── 画像メッセージ */}
