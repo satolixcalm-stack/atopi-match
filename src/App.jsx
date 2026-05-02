@@ -687,7 +687,7 @@ const isVisible = !!el;
     // 🔥 見えてない → 詳細ページへ
     if (n.postId) {
       setSelectedPostId(n.postId);
-      setSelectedOwnerUid?.(n.ownerUid); // あれば呼ぶ（無ければ無視でOK）
+    
       setScreen("postDetail");
     }
   }
