@@ -120,8 +120,8 @@ function PostDetailLoader({ postId, ownerUid, currentUser, onClickUser, onBack }
         currentUser={currentUser}
         onClickUser={onClickUser}
         canDelete={false}
-        highlightedPostId={null}
-        clearHighlight={() => {}}
+       highlightedPostId={highlightedPostId}
+clearHighlight={() => setHighlightedPostId(null)}
       />
     </div>
   );
