@@ -1120,11 +1120,7 @@ if (n.postId) {
     </button>
   )}
 
-</div>
 
-    <span style={{ fontSize:12,color:"#a8c5b0",flexShrink:0 }}>›</span>
-  </button>
-))}
         {/* プロフィールカード */}
         {myProfile && (
           <div style={S.card}>
