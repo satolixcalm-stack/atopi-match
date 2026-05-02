@@ -1452,6 +1452,6 @@ const S = {
   infoChip:{ background:"#f0f7f2",color:"#6b8f71",borderRadius:20,padding:"3px 11px",fontSize:11,border:"1px solid #c8e6c9" },
   empty:{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40,textAlign:"center" },
   matchRow:{ background:"#fff",borderRadius:16,padding:"14px 16px",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(61,107,79,0.06)",cursor:"pointer" },
-  nav:{ display:"flex", borderTop:"1px solid #e8f5e9", background:"#fff", position:"fixed", bottom:0, left:0, width:"100%", zIndex:100 },
+  nav:{ display:"flex", borderTop:"1px solid #e8f5e9", background:"#fff", position:"fixed", bottom:0, left:0, width:"100%", zIndex:100,boxShadow:"0 -2px 10px rgba(0,0,0,0.05)" },
   navBtn:{ flex:1,padding:"12px 0",background:"none",border:"none",borderTop:"2px solid transparent",color:"#6b8f71",fontSize:12,cursor:"pointer" },
 };
