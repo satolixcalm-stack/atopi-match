@@ -322,7 +322,7 @@ comments.forEach(c => {
   </div>
 )}
       {/* 投稿内容 */}
-      <div style={{ fontSize: 16, color: "#2f4f3f", fontWeight: 500, lineHeight: 1.6, paddingRight: 72 }}>{post.text}</div>
+     <div style={{ fontSize: 16, color: "#2f4f3f", fontWeight: 500, lineHeight: 1.6, maxWidth: "calc(100% - 80px)", wordBreak: "break-word" }}>{post.text}</div>
 <div
   style={{
     fontSize: 11,
@@ -403,7 +403,7 @@ comments.forEach(c => {
     <div style={{ cursor:"pointer" }} onClick={() => onClickUser(parent.userId)}>
       <Avatar avatarUrl={parent.userAvatarUrl} avatar={parent.userAvatar} size={18} />
     </div>
-    <div style={{ paddingRight: 72 }}>
+    <div style={{ maxWidth: "calc(100% - 80px)", wordBreak: "break-word" }}>
   <div>
     <span style={{ fontWeight:600, fontSize:13, color:"#4a6b54" }}>{parent.userName}</span>
     <span style={{ fontSize:14, color:"#4a6b54" }}>：{parent.text}</span>
@@ -443,7 +443,7 @@ comments.forEach(c => {
     <div style={{ cursor:"pointer" }} onClick={() => onClickUser(reply.userId)}>
       <Avatar avatarUrl={reply.userAvatarUrl} avatar={reply.userAvatar} size={16} />
     </div>
-    <div style={{ paddingRight: 72 }}>
+    <div style={{ maxWidth: "calc(100% - 80px)", wordBreak: "break-word" }}>
   <div>
     <span style={{ fontWeight:600, fontSize:12, color:"#6b8f71" }}>{reply.userName}</span>
     <span style={{ fontSize:13, color:"#5f7f68" }}>：{reply.text}</span>
