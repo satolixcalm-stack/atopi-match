@@ -176,34 +176,35 @@ function TimelinePostInner({
     }
   );
     
-  // ① 投稿者への通知（自分の投稿へのコメントは除く）
-  if (ownerUid !== currentUser.uid) {
-    await set(push(ref(db, "notifications/" + ownerUid)), {
-      type: "comment",
-      fromUserId: currentUser.uid,
-      fromUserName: user.name,
-      fromUserAvatar: user.avatar || "",
-      postId: post.id,           // ← 通知クリックでスクロールするために必須
-      ownerUid: ownerUid,
-      createdAt: Date.now(),
-      read: false
-    });
-  }
+ // ① 投稿者への通知（自分の投稿へのコメントは除く）
+if (ownerUid !== currentUser.uid) {
+  await set(push(ref(db, "notifications/" + ownerUid)), {
+    type: "comment",
+    targetType: "post",        // ← 追加
+    fromUserId: currentUser.uid,
+    fromUserName: user.name,
+    fromUserAvatar: user.avatar || "",
+    postId: post.id,
+    ownerUid: ownerUid,
+    createdAt: Date.now(),
+    read: false
+  });
+}
 
-  // ② 返信先への通知（重複なし・1回だけ）
-  if (replyTarget && replyTarget.userId !== currentUser.uid && replyTarget.userId !== ownerUid) {
-    await set(push(ref(db, "notifications/" + replyTarget.userId)), {
-      type: "reply",
-      fromUserId: currentUser.uid,
-      fromUserName: user.name,
-      fromUserAvatar: user.avatar || "",
-      postId: post.id,
-      ownerUid: ownerUid,
-      createdAt: Date.now(),
-      read: false
-    });
-  }
-
+// ② 返信先への通知（重複なし・1回だけ）
+if (replyTarget && replyTarget.userId !== currentUser.uid && replyTarget.userId !== ownerUid) {
+  await set(push(ref(db, "notifications/" + replyTarget.userId)), {
+    type: "comment",           // ← "reply" から "comment" に変更
+    targetType: "comment",     // ← 追加
+    fromUserId: currentUser.uid,
+    fromUserName: user.name,
+    fromUserAvatar: user.avatar || "",
+    postId: post.id,
+    ownerUid: ownerUid,
+    createdAt: Date.now(),
+    read: false
+  });
+}
   setReplyTarget(null);
 };
   const toggleCommentLike = async (commentId, currentLikes, commentUserId) => {
