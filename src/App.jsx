@@ -238,26 +238,31 @@ const grouped = {};
 rawList.forEach(n => {
   const key = `${n.type}_${n.fromUserId}_${n.postId || "noPost"}`;
 
-  if (!grouped[key]) {
-    grouped[key] = {
-      ...n,
-      count: 1,
-      latestCreatedAt: n.createdAt,
-      groupKey: key
-    };
-  } else {
-    grouped[key].count += 1;
+ if (!grouped[key]) {
+  grouped[key] = {
+    ...n,
+    count: 1,
+    latestCreatedAt: n.createdAt,
+    groupKey: key,
+    read: n.read  // ← 最初の通知のreadをそのまま使う
+  };
+} else {
+  grouped[key].count += 1;
 
-    if (n.createdAt > grouped[key].latestCreatedAt) {
-      grouped[key] = {
-        ...grouped[key],
-        ...n,
-        count: grouped[key].count,
-        latestCreatedAt: n.createdAt,
-        groupKey: key
-      };
-    }
+  // 1つでも未読があればグループ全体を未読にする
+  grouped[key].read = grouped[key].read && n.read;
+
+  if (n.createdAt > grouped[key].latestCreatedAt) {
+    grouped[key] = {
+      ...grouped[key],
+      ...n,
+      count: grouped[key].count,
+      latestCreatedAt: n.createdAt,
+      groupKey: key,
+      read: grouped[key].read  // ← readは上で計算した値を保持
+    };
   }
+}
 });
 
 // 配列化
@@ -265,7 +270,8 @@ const list = Object.values(grouped)
   .sort((a, b) => b.latestCreatedAt - a.latestCreatedAt);
 
 setNotifications(list);
-setUnreadCount(rawList.filter(n => !n.read).length);
+// グループ単位で未読を数える
+setUnreadCount(Object.values(grouped).filter(n => !n.read).length);
   });
 
   return () => unsubscribe();
