@@ -613,9 +613,11 @@ chatListenersRef.current = {};
 
       const msgs = Object.values(snap.val() || {}).filter(Boolean);
 
-      const unread = msgs.some(
-        msg => msg.senderUid !== currentUser.uid && msg.read !== true
-      );
+      const isViewing = chatTarget?.uid === m.uid;
+
+const unread = !isViewing && msgs.some(
+  msg => msg.senderUid !== currentUser.uid && msg.read !== true
+);
 
       setUnreadChats(prev => ({
         ...prev,
