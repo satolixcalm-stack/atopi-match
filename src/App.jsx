@@ -588,33 +588,45 @@ const formatTime = (ts) => {
 
 
 const loadUnreadChats = (matchesData) => {
-  if (!currentUser) return;
+  if (!currentUser?.uid) return;
 
-  // 既存のリスナーをすべて解除してからリセット
+  // 🔥 初期化（これが重要）
+  setUnreadChats({});
+
+  // 🔥 既存リスナー全削除
   Object.entries(chatListeners).forEach(([chatId, unsubscribe]) => {
-    unsubscribe();
+    off(ref(db, "chats/" + chatId + "/messages"), "value", unsubscribe);
     delete chatListeners[chatId];
   });
 
   Object.values(matchesData).forEach(m => {
     if (!m.uid) return;
+
     const chatId = [currentUser.uid, m.uid].sort().join("_");
     const chatRef = ref(db, "chats/" + chatId + "/messages");
 
-    const unsubscribe = onValue(chatRef, (snap) => {
-      if (!snap.exists()) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+    const callback = (snap) => {
+      if (!snap.exists()) {
+        setUnreadChats(prev => ({ ...prev, [m.uid]: false }));
+        return;
+      }
+
       const msgs = Object.values(snap.val() || {}).filter(Boolean);
-      if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
 
       const unread = msgs.some(
         msg => msg.senderUid !== currentUser.uid && msg.read !== true
       );
 
-      setUnreadChats(prev => ({ ...prev, [m.uid]: unread }));
-    });
+      setUnreadChats(prev => ({
+        ...prev,
+        [m.uid]: unread
+      }));
+    };
 
-    // リスナーを保存
-    chatListeners[chatId] = unsubscribe;
+    onValue(chatRef, callback);
+
+    // 🔥 リスナー保存
+    chatListeners[chatId] = callback;
   });
 };
   const sendLike = async (target) => {
@@ -669,9 +681,20 @@ const loadUnreadChats = (matchesData) => {
   };
 
   useEffect(() => {
-    if (!currentUser) return;
-    if (Object.keys(matches).length > 0) loadUnreadChats(matches);
-  }, [currentUser?.uid, JSON.stringify(Object.keys(matches))]);
+  if (!currentUser?.uid) return;
+
+  if (Object.keys(matches).length > 0) {
+    loadUnreadChats(matches);
+  }
+
+  // 🔥 クリーンアップ（超重要）
+  return () => {
+    Object.entries(chatListeners).forEach(([chatId, callback]) => {
+      off(ref(db, "chats/" + chatId + "/messages"), "value", callback);
+      delete chatListeners[chatId];
+    });
+  };
+}, [currentUser, matches]);
 
   const toggleExpand = (uid) => {
     if (expandedUid === uid) { setExpandedUid(null); }
