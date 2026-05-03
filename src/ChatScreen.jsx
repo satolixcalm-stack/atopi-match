@@ -246,7 +246,30 @@ useEffect(() => {
   // メッセージ1件分のバブルを描画
   // テキスト / 画像 を分岐して表示
   // ────────────────────────────────────────────
- const renderMessage = (m) => {
+   const myBubble = {
+  maxWidth: 240,
+  lineHeight: 1.6,
+  wordBreak: "break-word",
+  background: "#52a875",
+  color: "#fff",
+  borderRadius: "18px 18px 4px 18px",
+  padding: "8px 12px",
+  fontSize: 14,
+};
+
+const theirBubble = {
+  maxWidth: 240,
+  lineHeight: 1.6,
+  wordBreak: "break-word",
+  background: "#fff",
+  color: "#2d4a35",
+  borderRadius: "18px 18px 18px 4px",
+  boxShadow: "0 2px 8px rgba(61,107,79,0.08)",
+  padding: "8px 12px",
+  fontSize: 14,
+};
+  
+  const renderMessage = (m) => {
   const isMe = m.senderUid === currentUser.uid;
 
   return (
