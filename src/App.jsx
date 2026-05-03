@@ -950,7 +950,8 @@ if (screen === "postDetail") {
   clearHighlight={() => setHighlightedPostId(null)} // ← ★追加
 />
       </div>
-    {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
+      </div>  {/* ← この1行を追加 */}
+    {showNav && <NavBar ... />}
     </div></div>
   );
 }
