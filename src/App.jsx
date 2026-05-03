@@ -866,6 +866,8 @@ const handleNotificationClick = async (n) => {
 
   const showNav = ["browse","matches","mypage","viewProfile","postDetail"].includes(screen);
 
+  const totalUnreadChats = Object.values(unreadChats).filter(Boolean).length;
+                                                 
   const toastEl = toast ? (
     <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
       {toast}
@@ -898,7 +900,7 @@ if (screen === "postDetail") {
   clearHighlight={() => setHighlightedPostId(null)} // ← ★追加
 />
       </div>
-     {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
+    {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
     </div></div>
   );
 }
@@ -970,7 +972,7 @@ if (screen === "postDetail") {
           )}
         </div>
         {toastEl}
-         {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
+         {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
       </div></div>
     );
   }
@@ -1231,7 +1233,7 @@ if (screen === "postDetail") {
       </div>
       
       {tutorialEl}{toastEl}
-{showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
+{showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
     </div></div>
   );
 
@@ -1310,8 +1312,7 @@ if (screen === "postDetail") {
           </div>
         )}
       </div>
-      {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
-    </div></div>
+      {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
   );
 
   // ── mypage ───────────────────────────────────────────────
@@ -1519,7 +1520,7 @@ if (screen === "postDetail") {
       </div>
      
      {toastEl}
-{showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
+{showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
     </div></div>
   );
 }
