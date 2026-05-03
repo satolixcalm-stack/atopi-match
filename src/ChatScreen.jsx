@@ -62,23 +62,25 @@ useEffect(() => {
 
   const messagesRef = ref(db, "chats/" + chatId + "/messages");
 
-  // onValueで監視して、新着が届いたら即既読にする
-  const unsubRead = onValue(messagesRef, (snap) => {
+  get(messagesRef).then((snap) => {
     if (!snap.exists()) return;
+
     const updates = {};
+
     snap.forEach(child => {
       const msg = child.val();
+
       if (msg.senderUid !== currentUser.uid && msg.read !== true) {
         updates[child.key + "/read"] = true;
       }
     });
+
     if (Object.keys(updates).length > 0) {
       update(messagesRef, updates);
     }
   });
 
-  return () => off(messagesRef, "value", unsubRead);
-}, [chatId, currentUser]);
+}, [chatId]);
   
   useEffect(() => {
     const presenceRef = ref(db, `presence/${chatTarget.uid}`);
