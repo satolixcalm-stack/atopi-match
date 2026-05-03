@@ -179,6 +179,7 @@ export default function App() {
   const [visibleCount, setVisibleCount] = useState(5);
   const [filterMode, setFilterMode] = useState("all");
   const [unreadChats, setUnreadChats] = useState({});
+  const chatListenersRef = useRef({});
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [hoveredUid, setHoveredUid] = useState(null);
 
@@ -594,11 +595,10 @@ const loadUnreadChats = (matchesData) => {
   setUnreadChats({});
 
   // 🔥 既存リスナー全削除
-  Object.entries(chatListeners).forEach(([chatId, unsubscribe]) => {
-    off(ref(db, "chats/" + chatId + "/messages"), "value", unsubscribe);
-    delete chatListeners[chatId];
-  });
-
+  Object.entries(chatListenersRef.current).forEach(([chatId, callback]) => {
+  off(ref(db, "chats/" + chatId + "/messages"), "value", callback);
+});
+chatListenersRef.current = {};
   Object.values(matchesData).forEach(m => {
     if (!m.uid) return;
 
@@ -626,7 +626,7 @@ const loadUnreadChats = (matchesData) => {
     onValue(chatRef, callback);
 
     // 🔥 リスナー保存
-    chatListeners[chatId] = callback;
+    chatListenersRef.current[chatId] = callback;
   });
 };
   const sendLike = async (target) => {
