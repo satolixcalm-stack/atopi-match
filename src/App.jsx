@@ -5,6 +5,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "fi
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
 import ChatScreen from "./ChatScreen.jsx";
 import TimelinePost from "./TimelinePost.jsx";
+import NavBar from "./NavBar.jsx";
 
 const SEVERITY = ["軽症", "中等症", "重症", "寛解中"];
 const SKIN_CONDITIONS = ["乾燥肌", "じゅくじゅく型", "混合型", "慢性型", "季節性"];
@@ -769,6 +770,8 @@ const handleNotificationClick = async (n) => {
     </div>
   ) : null;
 
+  const showNav = ["browse","matches","mypage","viewProfile","postDetail"].includes(screen);
+
   const toastEl = toast ? (
     <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
       {toast}
@@ -801,6 +804,7 @@ if (screen === "postDetail") {
   clearHighlight={() => setHighlightedPostId(null)} // ← ★追加
 />
       </div>
+     {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
     </div></div>
   );
 }
@@ -872,6 +876,7 @@ if (screen === "postDetail") {
           )}
         </div>
         {toastEl}
+         {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
       </div></div>
     );
   }
@@ -1125,12 +1130,9 @@ if (screen === "postDetail") {
           );
         })}
       </div>
-      <div style={S.nav}>
-        <button style={{ ...S.navBtn,color:"#52a875",borderTop:"2px solid #52a875" }}>🔍 探す</button>
-        <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ ({Object.keys(matches).length})</button>
-        <button style={S.navBtn} onClick={() => setScreen("mypage")}>👤 マイページ{unreadCount > 0 ? <span style={{ marginLeft:4,background:"#e57373",color:"#fff",borderRadius:"50%",fontSize:10,padding:"1px 5px",fontWeight:700 }}>{unreadCount}</span> : ""}</button>
-      </div>
+      
       {tutorialEl}{toastEl}
+{showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
     </div></div>
   );
 
@@ -1209,11 +1211,7 @@ if (screen === "postDetail") {
           </div>
         )}
       </div>
-      <div style={S.nav}>
-  <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
-  <button style={{ ...S.navBtn, color:"#52a875", borderTop:"2px solid #52a875" }}>💚 マッチ ({Object.keys(matches).length})</button>
-  <button style={S.navBtn} onClick={() => setScreen("mypage")}>👤 マイページ{unreadCount > 0 ? <span style={{ marginLeft:4, background:"#e57373", color:"#fff", borderRadius:"50%", fontSize:10, padding:"1px 5px", fontWeight:700 }}>{unreadCount}</span> : ""}</button>
-</div>
+      {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
     </div></div>
   );
 
@@ -1420,12 +1418,9 @@ if (screen === "postDetail") {
           </div>
         </div>
       </div>
-     <div style={S.nav}>
-  <button style={S.navBtn} onClick={() => setScreen("browse")}>🔍 探す</button>
-  <button style={S.navBtn} onClick={() => setScreen("matches")}>💚 マッチ ({Object.keys(matches).length})</button>
-  <button style={{ ...S.navBtn, color:"#52a875", borderTop:"2px solid #52a875" }}>👤 マイページ{unreadCount > 0 ? <span style={{ marginLeft:4, background:"#e57373", color:"#fff", borderRadius:"50%", fontSize:10, padding:"1px 5px", fontWeight:700 }}>{unreadCount}</span> : ""}</button>
-</div>
-      {toastEl}
+     
+     {toastEl}
+{showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} />}
     </div></div>
   );
 }
