@@ -246,7 +246,7 @@ useEffect(() => {
   // メッセージ1件分のバブルを描画
   // テキスト / 画像 を分岐して表示
   // ────────────────────────────────────────────
-  const renderMessage = (m) => {
+ const renderMessage = (m) => {
   const isMe = m.senderUid === currentUser.uid;
 
   return (
@@ -259,7 +259,6 @@ useEffect(() => {
         marginBottom: 8
       }}
     >
-      {/* メッセージ本体 */}
       <div
         style={{
           display: "flex",
@@ -268,19 +267,25 @@ useEffect(() => {
         }}
       >
         <div style={isMe ? myBubble : theirBubble}>
-          {m.text}
+          {m.imageUrl ? (
+            <img
+              src={m.imageUrl}
+              alt="送信画像"
+              onClick={() => setModalUrl(m.imageUrl)}
+              style={{
+                maxWidth: 200,
+                borderRadius: 12,
+                cursor: "pointer"
+              }}
+            />
+          ) : (
+            m.text
+          )}
         </div>
       </div>
 
-      {/* 既読表示 */}
       {isMe && (
-        <div
-          style={{
-            fontSize: 10,
-            color: "#888",
-            marginTop: 2
-          }}
-        >
+        <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>
           {m.read ? "既読" : "送信済み"}
         </div>
       )}
@@ -288,60 +293,7 @@ useEffect(() => {
   );
 };
         
-       {/* 相手のアバター（左側に表示） */}
-{!isMe && (
-  chatTarget.avatarUrl ? (
-    <img src={chatTarget.avatarUrl} alt="avatar"
-      style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"1px solid #c8e6c9" }} />
-  ) : (
-    <div style={{
-      fontSize: 18, width: 30, height: 30,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      background: "#fff", borderRadius: "50%", flexShrink: 0,
-    }}>
-      {chatTarget.avatar}
-    </div>
-  )
-
-        )}
-
-        {/* ── 画像メッセージ */}
-        {m.imageUrl ? (
-          <img
-            src={m.imageUrl}
-            alt="送信画像"
-            onClick={() => setModalUrl(m.imageUrl)} // タップで拡大
-            style={{
-              maxWidth: 200, maxHeight: 200,
-              borderRadius: 12, objectFit: "cover",
-              cursor: "pointer",
-              border: isMe ? "none" : "1px solid #e0ede5",
-            }}
-          />
-       ) : (
-          /* ── テキストメッセージ */
-          <div style={isMe ? myBubble : theirBubble}>
-            {m.text}
-          </div>
-        )}
-
-        {/* 既読 / 送信済み表示（自分のメッセージのみ） */}
-        {isMe && (
-          <div style={{
-            fontSize: 10,
-            color: "#888",
-            alignSelf: "flex-end",
-            marginBottom: 2,
-            whiteSpace: "nowrap"
-          }}>
-            {m.read ? "既読" : "送信済み"}
-          </div>
-        )}
-
-      </div>
-    );
-  };
-
+   
   // ────────────────────────────────────────────
   // UI
   // ────────────────────────────────────────────
