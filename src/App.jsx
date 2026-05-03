@@ -901,7 +901,12 @@ if (screen === "postDetail") {
     <div style={S.app}>
       <ChatScreen currentUser={currentUser} myProfile={myProfile} chatTarget={chatTarget}
         commons={myProfile ? calcScore(myProfile, chatTarget).commons : []}
-        onBack={() => { setChatTarget(null); setScreen("matches"); }} />
+        onBack={() => {
+  setChatTarget(null);
+  setScreen("matches");
+  // チャットから戻ったときにリスナーをリセット
+  if (Object.keys(matches).length > 0) loadUnreadChats(matches);
+}} />
     </div>
   );
 
