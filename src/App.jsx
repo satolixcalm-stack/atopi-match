@@ -139,22 +139,6 @@ function PostDetailLoader({
  // リスナーを管理するためのMap（関数の外に定義）
 const chatListeners = {};
 
-const demoUser = {
-  uid: "demo_user",
-  name: "ダミー",
-  avatar: "🤖",
-  avatarUrl: "",
-  age: 25,
-  bio: "これはデモ用のユーザーです。実際にマッチした方にメッセージを送ってみましょう！",
-  severity: "軽症",
-  triggers: [],
-  treatments: [],
-  location: "",
-  gender: "未回答",
-  matchedAt: Date.now(),
-};
-
-
 export default function App() {
   const [screen, setScreen] = useState("auth");
   const [authMode, setAuthMode] = useState("login");
@@ -227,26 +211,6 @@ useEffect(() => {
           loadMyLikes(user.uid);
       
           if (!localStorage.getItem('seenTutorial')) setShowTutorial(true);
-
-setMyProfile(snap.val());
-loadAllProfiles(user.uid);
-loadMatches(user.uid);
-loadMyTimeline(user.uid);
-loadMyLikes(user.uid);
-
-// ↓ 追加
-if (!localStorage.getItem("demoMatched")) {
-  setMatches(prev => ({
-    ...prev,
-    [demoUser.uid]: { ...demoUser }
-  }));
-  localStorage.setItem("demoMatched", "true");
-  showToast("💚 あなたに合う人が見つかりました！マッチ一覧を開いてみましょう", 5000);
-}
-
-if (!localStorage.getItem('seenTutorial')) setShowTutorial(true);
-
-          
           setScreen("browse");
         } else {
           setScreen("register");
@@ -1330,15 +1294,7 @@ if (screen === "postDetail") {
                   <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }} onClick={() => toggleExpand(m.uid)}>
                     <AvatarImg avatarUrl={m.avatarUrl} emoji={m.avatar} size={50} />
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>
-  {m.name}
-  {m.uid === "demo_user" && (
-    <span style={{ background:"#ffeb3b", fontSize:10, padding:"2px 6px", borderRadius:6, marginLeft:6, fontWeight:700 }}>
-      NEW
-    </span>
-  )}
-  <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}> {m.age}歳</span>
-</div>
+                      <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <span style={{ fontSize:13,fontWeight:400,color:"#6b8f71" }}>{m.age}歳</span></div>
                       <div style={{ fontSize:12,color:"#6b8f71" }}>{m.location}{m.gender?" · "+m.gender:""} · {m.severity}</div>
                       {mCommons.length > 0 && <div style={{ fontSize:11,color:"#52a875",marginTop:2,fontWeight:700 }}>🌿 共通点：{mCommons.slice(0,2).join("・")}{mCommons.length > 2 ? ` +${mCommons.length - 2}` : ""}</div>}
                       <div style={{ fontSize:10,color:"#a8c5b0",marginTop:2 }}>{new Date(m.matchedAt).toLocaleDateString("ja-JP")} にマッチ</div>
