@@ -939,16 +939,17 @@ if (screen === "postDetail") {
     </div>
   )}
 
-  {Object.keys(matches).length === 0 ? (
-      <PostDetailLoader
-  postId={selectedPostId}
-  ownerUid={notifications.find(n => n.postId === selectedPostId)?.ownerUid}
-  currentUser={currentUser}
-  onClickUser={handleClickUser}
-  onBack={() => { setSelectedPostId(null); setScreen("mypage"); }}
-  highlightedPostId={highlightedPostId} // ← ★追加
-  clearHighlight={() => setHighlightedPostId(null)} // ← ★追加
-/>
+ {Object.keys(matches).length === 0 ? (
+  <PostDetailLoader
+    postId={selectedPostId}
+    ownerUid={notifications.find(n => n.postId === selectedPostId)?.ownerUid}
+    currentUser={currentUser}
+    onClickUser={handleClickUser}
+    onBack={() => { setSelectedPostId(null); setScreen("mypage"); }}
+    highlightedPostId={highlightedPostId}
+    clearHighlight={() => setHighlightedPostId(null)}
+  />
+) : null}
     
       </div> 
     {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
