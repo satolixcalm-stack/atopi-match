@@ -357,15 +357,22 @@ const theirBubble = {
         boxShadow: "0 1px 8px rgba(61,107,79,0.07)", flexShrink: 0,
       }}>
         <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 20, color: "#6b8f71", cursor: "pointer" }}>←</button>
-       {chatTarget.avatarUrl ? (
-  <img src={chatTarget.avatarUrl} alt="avatar"
-    style={{ width:38, height:38, borderRadius:"50%", objectFit:"cover", border:"2px solid #c8e6c9" }} />
+      {chatTarget.avatarUrl ? (
+  <img
+    src={chatTarget.avatarUrl}
+    alt="avatar"
+    onClick={() => { setViewProfile(chatTarget); setScreen("viewProfile"); }}
+    style={{ width:38, height:38, borderRadius:"50%", objectFit:"cover", border:"2px solid #c8e6c9", cursor:"pointer" }}
+  />
 ) : (
-  <div style={{
-    fontSize: 26, width: 38, height: 38,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    background: "#f0f7f2", borderRadius: "50%",
-  }}>
+  <div
+    onClick={() => { setViewProfile(chatTarget); setScreen("viewProfile"); }}
+    style={{
+      fontSize: 26, width: 38, height: 38,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      background: "#f0f7f2", borderRadius: "50%", cursor: "pointer"
+    }}
+  >
     {chatTarget.avatar}
   </div>
 )}
