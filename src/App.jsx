@@ -980,14 +980,15 @@ if (screen === "postDetail") {
   if (screen === "chat" && (!chatTarget || !currentUser || !myProfile)) { setScreen("matches"); return null; }
   if (screen === "chat") return (
     <div style={S.app}>
-      <ChatScreen currentUser={currentUser} myProfile={myProfile} chatTarget={chatTarget}
-        commons={myProfile ? calcScore(myProfile, chatTarget).commons : []}
-        onBack={() => {
-  setChatTarget(null);
-  setScreen("matches");
-  // チャットから戻ったときにリスナーをリセット
-  if (Object.keys(matches).length > 0) loadUnreadChats(matches);
-}} />
+     <ChatScreen currentUser={currentUser} myProfile={myProfile} chatTarget={chatTarget}
+  commons={myProfile ? calcScore(myProfile, chatTarget).commons : []}
+  setScreen={setScreen}
+  setViewProfile={setViewProfile}
+  onBack={() => {
+    setChatTarget(null);
+    setScreen("matches");
+    if (Object.keys(matches).length > 0) loadUnreadChats(matches);
+  }} />
     </div>
   );
 
