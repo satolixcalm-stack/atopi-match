@@ -695,15 +695,6 @@ chatListenersRef.current = {};
 }, [currentUser?.uid, Object.keys(matches).length]);
 
 
-  // 🔥 クリーンアップ（超重要）
- return () => {
-  Object.entries(chatListenersRef.current).forEach(([chatId, callback]) => {
-    off(ref(db, "chats/" + chatId + "/messages"), "value", callback);
-  });
-  chatListenersRef.current = {};
-};
-}, [currentUser, matches]);
-
   const toggleExpand = (uid) => {
     if (expandedUid === uid) { setExpandedUid(null); }
     else { setExpandedUid(uid); loadProfileTimeline(uid); }
