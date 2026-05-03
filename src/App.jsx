@@ -1341,12 +1341,12 @@ if (screen === "postDetail") {
         )}
         {notifications.length > 0 && (
          <div
-  onMouseEnter={() => setHoveredUid("mypage")}
+  onMouseEnter={() => setHoveredUid("mypage-notification")}
   onMouseLeave={() => setHoveredUid(null)}
   style={{
     ...S.card,
-    transform: hoveredUid === "mypage" ? "translateY(-1px)" : "none",
-    boxShadow: hoveredUid === "mypage"
+    transform: hoveredUid === "mypage-notification" ? "translateY(-1px)" : "none",
+    boxShadow: hoveredUid === "mypage-notification"
       ? "0 4px 12px rgba(61,107,79,0.10)"
       : "0 2px 8px rgba(61,107,79,0.06)",
     transition: "all 0.2s ease"
@@ -1442,12 +1442,12 @@ if (screen === "postDetail") {
         {/* プロフィールカード */}
         {myProfile && (
          <div
-  onMouseEnter={() => setHoveredUid("mypage-" + index)}
+  onMouseEnter={() => setHoveredUid("mypage-profile")}
   onMouseLeave={() => setHoveredUid(null)}
   style={{
     ...S.card,
-    transform: hoveredUid === "mypage-" + index ? "translateY(-1px)" : "none",
-    boxShadow: hoveredUid === "mypage-" + index
+    transform: hoveredUid === "mypage-profile" ? "translateY(-1px)" : "none",
+    boxShadow: hoveredUid === "mypage-profile"
       ? "0 4px 12px rgba(61,107,79,0.10)"
       : "0 2px 8px rgba(61,107,79,0.06)",
     transition: "all 0.2s ease"
@@ -1523,12 +1523,12 @@ if (screen === "postDetail") {
 
         {/* タイムライン投稿 */}
        <div
-  onMouseEnter={() => setHoveredUid("mypage-" + index)}
+  onMouseEnter={() => setHoveredUid("mypage-timeline")}
   onMouseLeave={() => setHoveredUid(null)}
   style={{
     ...S.card,
-    transform: hoveredUid === "mypage-" + index ? "translateY(-1px)" : "none",
-    boxShadow: hoveredUid === "mypage-" + index
+    transform: hoveredUid === "mypage-timeline" ? "translateY(-1px)" : "none",
+    boxShadow: hoveredUid === "mypage-timeline"
       ? "0 4px 12px rgba(61,107,79,0.10)"
       : "0 2px 8px rgba(61,107,79,0.06)",
     transition: "all 0.2s ease"
