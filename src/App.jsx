@@ -1340,7 +1340,18 @@ if (screen === "postDetail") {
           </div>
         )}
         {notifications.length > 0 && (
-          <div style={S.card}>
+         <div
+  onMouseEnter={() => setHoveredUid("mypage")}
+  onMouseLeave={() => setHoveredUid(null)}
+  style={{
+    ...S.card,
+    transform: hoveredUid === "mypage" ? "translateY(-1px)" : "none",
+    boxShadow: hoveredUid === "mypage"
+      ? "0 4px 12px rgba(61,107,79,0.10)"
+      : "0 2px 8px rgba(61,107,79,0.06)",
+    transition: "all 0.2s ease"
+  }}
+>
             <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>🔔 通知</div>
          <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
 
