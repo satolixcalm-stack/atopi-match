@@ -581,26 +581,37 @@ const formatTime = (ts) => {
 
 
 
-  const loadUnreadChats = (matchesData) => {
+ // リスナーを管理するためのMap（関数の外に定義）
+const chatListeners = {};
+
+const loadUnreadChats = (matchesData) => {
   if (!currentUser) return;
+
+  // 既存のリスナーをすべて解除してからリセット
+  Object.entries(chatListeners).forEach(([chatId, unsubscribe]) => {
+    unsubscribe();
+    delete chatListeners[chatId];
+  });
+
   Object.values(matchesData).forEach(m => {
     if (!m.uid) return;
     const chatId = [currentUser.uid, m.uid].sort().join("_");
-    onValue(ref(db, "chats/" + chatId + "/messages"), (snap) => {
-  if (!snap.exists()) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
-  const msgs = Object.values(snap.val() || {}).filter(Boolean);
-  if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+    const chatRef = ref(db, "chats/" + chatId + "/messages");
 
-  console.log("msgs:", msgs.map(msg => ({ senderUid: msg.senderUid, read: msg.read })));
+    const unsubscribe = onValue(chatRef, (snap) => {
+      if (!snap.exists()) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+      const msgs = Object.values(snap.val() || {}).filter(Boolean);
+      if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
 
-  const unread = msgs.some(
-    msg => msg.senderUid !== currentUser.uid && msg.read !== true
-  );
+      const unread = msgs.some(
+        msg => msg.senderUid !== currentUser.uid && msg.read !== true
+      );
 
-  console.log("unread:", unread, "uid:", m.uid);
+      setUnreadChats(prev => ({ ...prev, [m.uid]: unread }));
+    });
 
-  setUnreadChats(prev => ({ ...prev, [m.uid]: unread }));
-});
+    // リスナーを保存
+    chatListeners[chatId] = unsubscribe;
   });
 };
   const sendLike = async (target) => {
