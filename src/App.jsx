@@ -928,7 +928,14 @@ if (screen === "postDetail") {
           <div
   onMouseEnter={() => setHoveredUid("profile-main")}
   onMouseLeave={() => setHoveredUid(null)}
-  style={hoverStyle("profile-main")}
+  style={{
+    ...S.card,
+    transform: hoveredUid === "profile-main" ? "translateY(-2px)" : "none",
+    boxShadow: hoveredUid === "profile-main"
+      ? "0 6px 20px rgba(61,107,79,0.12)"
+      : "0 4px 24px rgba(61,107,79,0.08)",
+    transition: "all 0.2s ease"
+  }}
 >
             <div style={{ textAlign:"center",marginBottom:16 }}>
               <div style={{ display:"flex",justifyContent:"center",marginBottom:8 }}>
