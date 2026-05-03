@@ -135,6 +135,10 @@ function PostDetailLoader({
     </div>
   );
 }
+
+ // リスナーを管理するためのMap（関数の外に定義）
+const chatListeners = {};
+
 export default function App() {
   const [screen, setScreen] = useState("auth");
   const [authMode, setAuthMode] = useState("login");
@@ -581,8 +585,7 @@ const formatTime = (ts) => {
 
 
 
- // リスナーを管理するためのMap（関数の外に定義）
-const chatListeners = {};
+
 
 const loadUnreadChats = (matchesData) => {
   if (!currentUser) return;
