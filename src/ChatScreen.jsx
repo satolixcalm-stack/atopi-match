@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { db, storage } from "./firebase.js";
-import { ref, push, onValue, off, serverTimestamp, onDisconnect, set } from "firebase/database";
+import { ref, push, onValue, off, serverTimestamp, onDisconnect, set, get, update } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // チャットIDを2人のUIDから生成（順番に依存しないようにソート）
@@ -56,6 +56,31 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
   const chatId = getChatId(currentUser.uid, chatTarget.uid);
 
   // ── オンライン状態の監視
+
+// ── チャット画面を開いたら相手の未読メッセージを既読にする
+useEffect(() => {
+  if (!currentUser || !chatTarget) return;
+
+  const messagesRef = ref(db, "chats/" + chatId + "/messages");
+
+  get(messagesRef).then(snap => {
+    if (!snap.exists()) return;
+
+    const updates = {};
+    snap.forEach(child => {
+      const msg = child.val();
+      // 相手の未読メッセージだけ既読にする
+      if (msg.senderUid !== currentUser.uid && !msg.read) {
+        updates[child.key + "/read"] = true;
+      }
+    });
+
+    if (Object.keys(updates).length > 0) {
+      update(messagesRef, updates);
+    }
+  });
+}, [chatId]); // chatIdが変わるたびに実行
+  
   useEffect(() => {
     const presenceRef = ref(db, `presence/${chatTarget.uid}`);
     const unsub = onValue(presenceRef, (snap) => {
@@ -140,11 +165,12 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
     setInput("");
     try {
       await push(ref(db, "chats/" + chatId + "/messages"), {
-        text,
-        senderUid: currentUser.uid,
-        senderName: myProfile.name,
-        timestamp: serverTimestamp(),
-      });
+  text,
+  senderUid: currentUser.uid,
+  senderName: myProfile.name,
+  timestamp: serverTimestamp(),
+  read: false,  // ← 追加
+});
     } catch (e) {
       setInput(text); // 失敗時は入力欄に戻す
     }
@@ -171,11 +197,12 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
       // Realtime Databaseにメッセージとして保存
       // ※ textの代わりにimageUrlを持つ構造
       await push(ref(db, "chats/" + chatId + "/messages"), {
-        imageUrl,                      // 画像URL
-        senderUid: currentUser.uid,
-        senderName: myProfile.name,
-        timestamp: serverTimestamp(),
-      });
+  imageUrl,
+  senderUid: currentUser.uid,
+  senderName: myProfile.name,
+  timestamp: serverTimestamp(),
+  read: false,  // ← 追加
+});
 
       // 送信成功後にプレビューをクリア
       cancelImage();
