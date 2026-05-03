@@ -607,10 +607,12 @@ chatListenersRef.current = {};
 
     const callback = (snap) => {
       if (!snap.exists()) {
-        setUnreadChats(prev => ({ ...prev, [m.uid]: false }));
-        return;
-      }
-
+  setUnreadChats(prev => {
+    if (prev[m.uid] === false) return prev;
+    return { ...prev, [m.uid]: false };
+  });
+  return;
+}
       const msgs = Object.values(snap.val() || {}).filter(Boolean);
 
       const isViewing = chatTarget?.uid === m.uid;
@@ -619,10 +621,14 @@ const unread = !isViewing && msgs.some(
   msg => msg.senderUid !== currentUser.uid && msg.read !== true
 );
 
-      setUnreadChats(prev => ({
-        ...prev,
-        [m.uid]: unread
-      }));
+      setUnreadChats(prev => {
+  if (prev[m.uid] === unread) return prev;
+
+  return {
+    ...prev,
+    [m.uid]: unread
+  };
+});
     };
 
     onValue(chatRef, callback);
