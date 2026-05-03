@@ -688,12 +688,12 @@ chatListenersRef.current = {};
   }
 
   // 🔥 クリーンアップ（超重要）
-  return () => {
-    Object.entries(chatListeners).forEach(([chatId, callback]) => {
-      off(ref(db, "chats/" + chatId + "/messages"), "value", callback);
-      delete chatListeners[chatId];
-    });
-  };
+ return () => {
+  Object.entries(chatListenersRef.current).forEach(([chatId, callback]) => {
+    off(ref(db, "chats/" + chatId + "/messages"), "value", callback);
+  });
+  chatListenersRef.current = {};
+};
 }, [currentUser, matches]);
 
   const toggleExpand = (uid) => {
