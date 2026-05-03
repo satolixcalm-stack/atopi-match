@@ -958,7 +958,7 @@ if (screen === "postDetail") {
                   background: myLikes[viewProfile.uid] ? "#d4edda" : "#f0f0f0",
                   color: myLikes[viewProfile.uid] ? "#2e7d32" : "#666",
                   border: myLikes[viewProfile.uid] ? "1px solid #4caf50" : "1px solid #ccc" }}>
-                {myLikes[viewProfile.uid] ? "🌿 共感済" : "🌿 共感する"}
+                {myLikes[viewProfile.uid] ? "🌿 共感済み" : "🌿 共感する"}
               </button>
             )}
             {matches[viewProfile.uid] && (
@@ -1215,7 +1215,7 @@ if (screen === "postDetail") {
                 <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:6 }}>
                   <button onClick={async e => { e.stopPropagation(); const r = await sendLike(p); if (r.type==="match") showToast("🎉 マッチしました！チャットできます"); else if (r.type==="like") showToast("🌿 共感しました｜お互いに共感でチャットできます"); }}
                     style={{ background: matches[p.uid] ? "#ffebee" : myLikes[p.uid] ? "#d4edda" : "#f0f0f0", color: matches[p.uid] ? "#e57373" : myLikes[p.uid] ? "#2e7d32" : "#666", border: matches[p.uid] ? "1px solid #f48fb1" : myLikes[p.uid] ? "1px solid #4caf50" : "1px solid #ccc", borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:matches[p.uid]?"default":"pointer", pointerEvents: matches[p.uid] ? "none" : "auto" }}>
-                    {matches[p.uid] ? "❤️ マッチ済" : myLikes[p.uid] ? "🌿 共感済" : "🌿 共感する"}
+                    {matches[p.uid] ? "❤️ マッチ済" : myLikes[p.uid] ? "🌿 共感済み" : "🌿 共感する"}
                   </button>
                   {matches[p.uid] && <button onClick={e => { e.stopPropagation(); setChatTarget(matches[p.uid]); setScreen("chat"); }} style={{ background:"#52a875",color:"#fff",border:"none",borderRadius:20,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer" }}>💬 チャット</button>}
                  
