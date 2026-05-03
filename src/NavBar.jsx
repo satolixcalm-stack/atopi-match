@@ -1,4 +1,20 @@
 export default function NavBar({ screen, setScreen, matches, unreadCount, totalUnreadChats }) {
+  const badgeStyle = {
+  marginLeft: 4,
+  background: "#e57373",
+  color: "#fff",
+  borderRadius: "999px",
+  minWidth: 16,
+  height: 16,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 9,
+  padding: "0 5px",
+  fontWeight: 700,
+  boxSizing: "border-box",
+  lineHeight: 1
+};
   const navBtn = {
     flex: 1, padding: "12px 0", background: "none", border: "none",
     borderTop: "2px solid transparent", color: "#6b8f71", fontSize: 12, cursor: "pointer"
@@ -16,47 +32,19 @@ export default function NavBar({ screen, setScreen, matches, unreadCount, totalU
       <button style={screen==="matches"?activeBtn:navBtn} onClick={()=>setScreen("matches")}>
   💚 マッチ ({Object.keys(matches).length})
   {totalUnreadChats > 0 && (
-    <span style={{
-  marginLeft: 4,
-  background: "#e57373",
-  color: "#fff",
-  borderRadius: "999px",
-  minWidth: 16,
-  height: 16,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 9,
-  padding: "0 6px",
-  fontWeight: 700,
-  boxSizing: "border-box"
-}}>
-  {count}
-</span>
+    <span style={badgeStyle}>
+      {totalUnreadChats > 99 ? "99+" : totalUnreadChats}
+    </span>
   )}
 </button>
       <button style={screen==="mypage"?activeBtn:navBtn} onClick={()=>setScreen("mypage")}>
-        👤 マイページ
-        {unreadCount>0 && (
-          <span style={{
-  marginLeft: 4,
-  background: "#e57373",
-  color: "#fff",
-  borderRadius: "999px",
-  minWidth: 16,
-  height: 16,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 9,
-  padding: "0 6px",
-  fontWeight: 700,
-  boxSizing: "border-box"
-}}>
-  {count}
-</span>
-        )}
-      </button>
+  👤 マイページ
+  {unreadCount > 0 && (
+    <span style={badgeStyle}>
+      {unreadCount > 99 ? "99+" : unreadCount}
+    </span>
+  )}
+</button>
     </div>
   );
 }
