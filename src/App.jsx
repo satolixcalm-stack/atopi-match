@@ -688,10 +688,46 @@ const unread = !isViewing && msgs.some(
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
   if (!currentUser?.uid) return;
 
-  loadUnreadChats(matches);
+  // 🔥 既存リスナー全部削除
+  Object.entries(chatListenersRef.current).forEach(([chatId, callback]) => {
+    off(ref(db, "chats/" + chatId + "/messages"), "value", callback);
+  });
+  chatListenersRef.current = {};
+
+  Object.values(matches).forEach(m => {
+    if (!m.uid) return;
+
+    const chatId = [currentUser.uid, m.uid].sort().join("_");
+    const chatRef = ref(db, "chats/" + chatId + "/messages");
+
+    const callback = (snap) => {
+      if (!snap.exists()) {
+        setUnreadChats(prev => ({ ...prev, [m.uid]: false }));
+        return;
+      }
+
+      const msgs = Object.values(snap.val() || {}).filter(Boolean);
+
+      const isViewing = chatTarget?.uid === m.uid;
+
+      const unread = !isViewing && msgs.some(
+        msg => msg.senderUid !== currentUser.uid && msg.read !== true
+      );
+
+      setUnreadChats(prev => ({
+        ...prev,
+        [m.uid]: unread
+      }));
+    };
+
+    onValue(chatRef, callback);
+
+    // 🔥 リスナー保存
+    chatListenersRef.current[chatId] = callback;
+  });
 
   return () => {
     Object.entries(chatListenersRef.current).forEach(([chatId, callback]) => {
@@ -700,8 +736,7 @@ const unread = !isViewing && msgs.some(
     chatListenersRef.current = {};
   };
 
-}, [currentUser?.uid, Object.keys(matches).length]);
-
+}, [currentUser?.uid, matches, chatTarget]);
 
   const toggleExpand = (uid) => {
     if (expandedUid === uid) { setExpandedUid(null); }
