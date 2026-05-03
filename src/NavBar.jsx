@@ -17,24 +17,44 @@ export default function NavBar({ screen, setScreen, matches, unreadCount, totalU
   💚 マッチ ({Object.keys(matches).length})
   {totalUnreadChats > 0 && (
     <span style={{
-      marginLeft: 4,
-      background: "#e57373",
-      color: "#fff",
-      borderRadius: "50%",
-      fontSize: 10,
-      padding: "1px 6px",
-      fontWeight: 700
-    }}>
-      {totalUnreadChats}
-    </span>
+  marginLeft: 4,
+  background: "#e57373",
+  color: "#fff",
+  borderRadius: "999px",
+  minWidth: 16,
+  height: 16,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 9,
+  padding: "0 6px",
+  fontWeight: 700,
+  boxSizing: "border-box"
+}}>
+  {count}
+</span>
   )}
 </button>
       <button style={screen==="mypage"?activeBtn:navBtn} onClick={()=>setScreen("mypage")}>
         👤 マイページ
         {unreadCount>0 && (
-          <span style={{ marginLeft:4, background:"#e57373", color:"#fff", borderRadius:"50%", fontSize:10, padding:"1px 5px" }}>
-            {unreadCount}
-          </span>
+          <span style={{
+  marginLeft: 4,
+  background: "#e57373",
+  color: "#fff",
+  borderRadius: "999px",
+  minWidth: 16,
+  height: 16,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 9,
+  padding: "0 6px",
+  fontWeight: 700,
+  boxSizing: "border-box"
+}}>
+  {count}
+</span>
         )}
       </button>
     </div>
