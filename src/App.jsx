@@ -171,6 +171,11 @@ export default function App() {
   const [profileTimelinePages, setProfileTimelinePages] = useState({});
   const [usersCache, setUsersCache] = useState({});
   const [viewProfile, setViewProfile] = useState(null);
+useEffect(() => {
+  if (!viewProfile?.uid) return;
+
+  loadProfileTimeline(viewProfile.uid);
+}, [viewProfile?.uid]);
   const [highlightedPostId, setHighlightedPostId] = useState(null);
   const [toast, setToast] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
