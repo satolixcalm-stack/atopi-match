@@ -949,7 +949,7 @@ if (screen === "postDetail") {
   highlightedPostId={highlightedPostId} // ← ★追加
   clearHighlight={() => setHighlightedPostId(null)} // ← ★追加
 />
-      </div>
+    
       </div> 
     {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
     </div></div>
