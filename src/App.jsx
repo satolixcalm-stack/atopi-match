@@ -872,6 +872,10 @@ const handleNotificationClick = async (n) => {
   const showNav = ["browse","matches","mypage","viewProfile","postDetail"].includes(screen);
 
   const totalUnreadChats = Object.values(unreadChats).filter(Boolean).length;
+
+  const receivedLikes = notifications.filter(n =>
+  n.type === "profile_like" && !matches[n.fromUserId]
+);
                                                  
   const toastEl = toast ? (
     <div style={{ position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:"#2d4a35",color:"#fff",borderRadius:20,padding:"10px 20px",fontSize:13,fontWeight:700,zIndex:150,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,0.2)" }}>
@@ -894,7 +898,48 @@ if (screen === "postDetail") {
         <span style={S.barTitle}>📝 投稿の詳細</span>
         <div style={{ width: 60 }} />
       </div>
-      <div style={{ flex:1, overflowY:"auto", padding:16 }}>
+     <div style={{ flex:1,overflowY:"auto",padding:16 }}>
+
+  {/* 共感してくれたユーザー一覧 */}
+  {receivedLikes.length > 0 && (
+    <div style={{ marginBottom:12 }}>
+      <div style={{ fontSize:13, color:"#6b8f71", fontWeight:700, marginBottom:6 }}>
+        🌿 あなたに共感している人
+      </div>
+      {receivedLikes.map((n, index) => (
+        <div
+          key={index}
+          onClick={async () => {
+            const snap = await get(ref(db, "users/" + n.fromUserId));
+            if (snap.exists()) {
+              setViewProfile({ uid: n.fromUserId, ...snap.val() });
+              await loadProfileTimeline(n.fromUserId);
+              setScreen("viewProfile");
+            }
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            background: "#e8f5e9",
+            padding: "10px 14px",
+            borderRadius: 12,
+            marginBottom: 6,
+            cursor: "pointer",
+            border: "1px solid #c8e6c9"
+          }}
+        >
+          <span style={{ fontSize: 20 }}>{n.fromUserAvatar || "🌿"}</span>
+          <span style={{ fontSize: 13, color: "#3d6b4f", fontWeight: 600 }}>
+            {n.fromUserName} さんがあなたに共感しています
+          </span>
+          <span style={{ marginLeft:"auto", color:"#a8c5b0", fontSize:12 }}>›</span>
+        </div>
+      ))}
+    </div>
+  )}
+
+  {Object.keys(matches).length === 0 ? (
       <PostDetailLoader
   postId={selectedPostId}
   ownerUid={notifications.find(n => n.postId === selectedPostId)?.ownerUid}
