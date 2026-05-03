@@ -950,7 +950,7 @@ if (screen === "postDetail") {
   clearHighlight={() => setHighlightedPostId(null)} // ← ★追加
 />
       </div>
-      </div>  {/* ← この1行を追加 */}
+      </div> 
     {showNav && <NavBar ... />}
     </div></div>
   );
