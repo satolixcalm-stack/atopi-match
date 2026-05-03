@@ -39,7 +39,7 @@ function ImageModal({ url, onClose }) {
   );
 }
 
-export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack, commons = [] }) {
+export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack, commons = [], setScreen, setViewProfile }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isOnline, setIsOnline] = useState(false);
@@ -282,13 +282,32 @@ const theirBubble = {
         marginBottom: 8
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: isMe ? "flex-end" : "flex-start",
-          maxWidth: "80%"
-        }}
-      >
+      <div style={{
+        display: "flex",
+        justifyContent: isMe ? "flex-end" : "flex-start",
+        alignItems: "flex-end",
+        gap: 6,
+        maxWidth: "80%"
+      }}>
+
+        {/* 相手のアバター（左側に表示） */}
+        {!isMe && (
+          chatTarget.avatarUrl ? (
+            <img
+              src={chatTarget.avatarUrl}
+              alt="avatar"
+              onClick={() => { setViewProfile(chatTarget); setScreen("viewProfile"); }}
+              style={{ width:30, height:30, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"1px solid #c8e6c9", cursor:"pointer" }}
+            />
+          ) : (
+            <div
+              onClick={() => { setViewProfile(chatTarget); setScreen("viewProfile"); }}
+              style={{ fontSize:18, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", background:"#fff", borderRadius:"50%", flexShrink:0, cursor:"pointer" }}
+            >
+              {chatTarget.avatar}
+            </div>
+          )
+        )}
         <div style={isMe ? myBubble : theirBubble}>
           {m.imageUrl ? (
             <img
