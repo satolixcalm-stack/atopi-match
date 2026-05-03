@@ -57,29 +57,28 @@ export default function ChatScreen({ currentUser, myProfile, chatTarget, onBack,
 
   // ── オンライン状態の監視
 
-// ── チャット画面を開いたら相手の未読メッセージを既読にする
 useEffect(() => {
   if (!currentUser || !chatTarget) return;
 
   const messagesRef = ref(db, "chats/" + chatId + "/messages");
 
-  get(messagesRef).then(snap => {
+  // onValueで監視して、新着が届いたら即既読にする
+  const unsubRead = onValue(messagesRef, (snap) => {
     if (!snap.exists()) return;
-
     const updates = {};
     snap.forEach(child => {
       const msg = child.val();
-      // 相手の未読メッセージだけ既読にする
       if (msg.senderUid !== currentUser.uid && !msg.read) {
         updates[child.key + "/read"] = true;
       }
     });
-
     if (Object.keys(updates).length > 0) {
       update(messagesRef, updates);
     }
   });
-}, [chatId]); // chatIdが変わるたびに実行
+
+  return () => off(messagesRef, "value", unsubRead);
+}, [chatId]);
   
   useEffect(() => {
     const presenceRef = ref(db, `presence/${chatTarget.uid}`);
