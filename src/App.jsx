@@ -683,8 +683,16 @@ chatListenersRef.current = {};
   useEffect(() => {
   if (!currentUser?.uid) return;
 
-  if (Object.keys(matches).length > 0) {
-    loadUnreadChats(matches);
+  loadUnreadChats(matches);
+
+  return () => {
+    Object.entries(chatListenersRef.current).forEach(([chatId, callback]) => {
+      off(ref(db, "chats/" + chatId + "/messages"), "value", callback);
+    });
+    chatListenersRef.current = {};
+  };
+
+}, [currentUser?.uid, Object.keys(matches).length]);
   }
 
   // 🔥 クリーンアップ（超重要）
