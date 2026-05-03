@@ -111,6 +111,34 @@ useEffect(() => {
     return () => off(msgRef);
   }, [chatId]);
 
+  useEffect(() => {
+  if (!currentUser || !chatTarget) return;
+
+  const messagesRef = ref(db, "chats/" + chatId + "/messages");
+
+  const callback = (snap) => {
+    if (!snap.exists()) return;
+
+    const updates = {};
+
+    snap.forEach(child => {
+      const msg = child.val();
+
+      if (msg.senderUid !== currentUser.uid && msg.read !== true) {
+        updates[child.key + "/read"] = true;
+      }
+    });
+
+    if (Object.keys(updates).length > 0) {
+      update(messagesRef, updates);
+    }
+  };
+
+  onValue(messagesRef, callback);
+
+  return () => off(messagesRef, "value", callback);
+}, [chatId, currentUser]);
+
   // ── 最新メッセージへ自動スクロール
   const scrollToBottom = () => {
     if (msgAreaRef.current) {
