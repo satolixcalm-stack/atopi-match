@@ -68,7 +68,7 @@ useEffect(() => {
     const updates = {};
     snap.forEach(child => {
       const msg = child.val();
-      if (msg.senderUid !== currentUser.uid && !msg.read) {
+      if (msg.senderUid !== currentUser.uid && msg.read !== true) {
         updates[child.key + "/read"] = true;
       }
     });
@@ -78,7 +78,7 @@ useEffect(() => {
   });
 
   return () => off(messagesRef, "value", unsubRead);
-}, [chatId]);
+}, [chatId, currentUser]);
   
   useEffect(() => {
     const presenceRef = ref(db, `presence/${chatTarget.uid}`);
