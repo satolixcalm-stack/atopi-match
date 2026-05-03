@@ -1330,7 +1330,7 @@ if (screen === "postDetail") {
                   <div style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer" }} onClick={() => toggleExpand(m.uid)}>
                     <AvatarImg avatarUrl={m.avatarUrl} emoji={m.avatar} size={50} />
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>{m.name} <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>
+                      <div style={{ fontSize:15,fontWeight:700,color:"#3d6b4f" }}>
   {m.name}
   {m.uid === "demo_user" && (
     <span style={{ background:"#ffeb3b", fontSize:10, padding:"2px 6px", borderRadius:6, marginLeft:6, fontWeight:700 }}>
