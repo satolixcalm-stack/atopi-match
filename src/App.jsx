@@ -1441,7 +1441,18 @@ if (screen === "postDetail") {
 
         {/* プロフィールカード */}
         {myProfile && (
-          <div style={S.card}>
+         <div
+  onMouseEnter={() => setHoveredUid("mypage-" + index)}
+  onMouseLeave={() => setHoveredUid(null)}
+  style={{
+    ...S.card,
+    transform: hoveredUid === "mypage-" + index ? "translateY(-1px)" : "none",
+    boxShadow: hoveredUid === "mypage-" + index
+      ? "0 4px 12px rgba(61,107,79,0.10)"
+      : "0 2px 8px rgba(61,107,79,0.06)",
+    transition: "all 0.2s ease"
+  }}
+>
             <div style={{ textAlign:"center",marginBottom:16 }}>
 
               {/* ────────────────────────────────────────
@@ -1511,7 +1522,18 @@ if (screen === "postDetail") {
         )}
 
         {/* タイムライン投稿 */}
-        <div style={S.card}>
+       <div
+  onMouseEnter={() => setHoveredUid("mypage-" + index)}
+  onMouseLeave={() => setHoveredUid(null)}
+  style={{
+    ...S.card,
+    transform: hoveredUid === "mypage-" + index ? "translateY(-1px)" : "none",
+    boxShadow: hoveredUid === "mypage-" + index
+      ? "0 4px 12px rgba(61,107,79,0.10)"
+      : "0 2px 8px rgba(61,107,79,0.06)",
+    transition: "all 0.2s ease"
+  }}
+>
           <div style={{ fontSize:15,fontWeight:800,color:"#3d6b4f",marginBottom:12 }}>📝 タイムライン</div>
           <textarea style={{ ...S.input,height:70,resize:"vertical",marginBottom:8 }} placeholder="今日の体調や日常を投稿しましょう..." value={timelineInput} onChange={e => setTimelineInput(e.target.value)} />
           {imagePreview && (
