@@ -951,7 +951,7 @@ if (screen === "postDetail") {
 />
       </div>
       </div> 
-    {showNav && <NavBar ... />}
+    {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
     </div></div>
   );
 }
