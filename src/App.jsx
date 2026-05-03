@@ -448,6 +448,10 @@ setUnreadCount(Object.values(grouped).filter(n => !n.read).length);
     loadMyTimeline(currentUser.uid);
 
     // ── 画面遷移
+if (!localStorage.getItem('seenTutorial')) {
+  setShowTutorial(true);
+}
+    
     setScreen("browse");
 
   } catch (e) {
