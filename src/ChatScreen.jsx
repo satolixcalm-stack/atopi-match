@@ -260,11 +260,13 @@ useEffect(() => {
       }}
     >
       {/* メッセージ本体 */}
-      <div style={{
-        display: "flex",
-        justifyContent: isMe ? "flex-end" : "flex-start",
-        maxWidth: "80%"
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: isMe ? "flex-end" : "flex-start",
+          maxWidth: "80%"
+        }}
+      >
         <div style={isMe ? myBubble : theirBubble}>
           {m.text}
         </div>
@@ -272,11 +274,13 @@ useEffect(() => {
 
       {/* 既読表示 */}
       {isMe && (
-        <div style={{
-          fontSize: 10,
-          color: "#888",
-          marginTop: 2
-        }}>
+        <div
+          style={{
+            fontSize: 10,
+            color: "#888",
+            marginTop: 2
+          }}
+        >
           {m.read ? "既読" : "送信済み"}
         </div>
       )}
