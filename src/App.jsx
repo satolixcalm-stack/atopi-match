@@ -1313,6 +1313,7 @@ if (screen === "postDetail") {
         )}
       </div>
       {showNav && <NavBar screen={screen} setScreen={setScreen} matches={matches} unreadCount={unreadCount} totalUnreadChats={totalUnreadChats} />}
+    </div></div>
   );
 
   // ── mypage ───────────────────────────────────────────────
@@ -1524,7 +1525,7 @@ if (screen === "postDetail") {
     </div></div>
   );
 }
-｝
+
 const S = {
   app:{ minHeight:"100vh",background:"#f0f7f2",fontFamily:"'Hiragino Sans','Yu Gothic',sans-serif",display:"flex",justifyContent:"center" },
   page:{ width:"100%", maxWidth:420, display:"flex", flexDirection:"column", minHeight:"100vh", paddingBottom:80 },
