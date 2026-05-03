@@ -925,7 +925,11 @@ if (screen === "postDetail") {
           <div style={{ width:60 }} />
         </div>
         <div style={{ flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:14 }}>
-          <div style={S.card}>
+          <div
+  onMouseEnter={() => setHoveredUid("profile-main")}
+  onMouseLeave={() => setHoveredUid(null)}
+  style={hoverStyle("profile-main")}
+>
             <div style={{ textAlign:"center",marginBottom:16 }}>
               <div style={{ display:"flex",justifyContent:"center",marginBottom:8 }}>
                 <AvatarImg avatarUrl={viewProfile.avatarUrl} emoji={viewProfile.avatar} size={96} />
