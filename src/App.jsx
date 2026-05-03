@@ -448,9 +448,14 @@ setUnreadCount(Object.values(grouped).filter(n => !n.read).length);
     loadMyTimeline(currentUser.uid);
 
     // ── 画面遷移
-if (!localStorage.getItem('seenTutorial')) {
+// 🔥 初回ユーザーは必ずチュートリアル出す
+localStorage.removeItem('seenTutorial');
+
+setScreen("browse");
+
+setTimeout(() => {
   setShowTutorial(true);
-}
+}, 0);
     
     setScreen("browse");
 
