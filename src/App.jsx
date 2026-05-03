@@ -1264,16 +1264,19 @@ if (screen === "postDetail") {
               const { commons: mCommons } = myProfile ? calcScore(myProfile, m) : { commons: [] };
               return (
                 <div
+ <div
   key={m.uid}
   onMouseEnter={() => setHoveredUid(m.uid)}
   onMouseLeave={() => setHoveredUid(null)}
   style={{
-    background: hoveredUid === m.uid ? "#e6f4ea" : "#fff",
+    background: "#fff",
     borderRadius: 18,
-    boxShadow: "0 2px 14px rgba(61,107,79,0.08)",
     overflow: "hidden",
-    transform: hoveredUid === m.uid ? "scale(0.99)" : "scale(1)",
-    transition: "transform 0.15s ease, background 0.15s ease",
+    boxShadow: hoveredUid === m.uid
+      ? "0 6px 20px rgba(61,107,79,0.15)"
+      : "0 2px 14px rgba(61,107,79,0.08)",
+    transform: hoveredUid === m.uid ? "translateY(-2px)" : "none",
+    transition: "all 0.2s ease",
     cursor: "pointer",
   }}
 >
