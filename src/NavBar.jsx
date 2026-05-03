@@ -4,22 +4,33 @@ export default function NavBar({ screen, setScreen, matches, unreadCount, totalU
   background: "#e57373",
   color: "#fff",
   borderRadius: "999px",
-  minWidth: 16,
-  height: 16,
+  minWidth: 15,
+  height: 15,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  fontSize: 9,
-  padding: "0 5px",
+  fontSize: 8.5,
+  padding: "0 4px",
   fontWeight: 700,
   boxSizing: "border-box",
   lineHeight: 1
 };
-  const navBtn = {
-    flex: 1, padding: "12px 0", background: "none", border: "none",
-    borderTop: "2px solid transparent", color: "#6b8f71", fontSize: 12, cursor: "pointer"
-  };
-  const activeBtn = { ...navBtn, color: "#52a875", borderTop: "2px solid #52a875" };
+ const navBtn = {
+  flex: 1,
+  padding: "10px 0",
+  background: "none",
+  border: "none",
+  borderTop: "2px solid transparent",
+  color: "#6b8f71",
+  fontSize: 13,   // ← 12 → 13
+  cursor: "pointer"
+};
+
+const activeBtn = {
+  ...navBtn,
+  color: "#52a875",
+  borderTop: "2px solid #52a875"
+};
 
   return (
     <div style={{
