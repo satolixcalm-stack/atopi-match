@@ -270,15 +270,43 @@ useEffect(() => {
     };
 
     return (
-      <div
-        key={m.id}
-        style={{
-          display: "flex",
-          justifyContent: isMe ? "flex-end" : "flex-start",
-          alignItems: "flex-end",
-          gap: 6,
-        }}
-      >
+  <div
+    key={m.id}
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: isMe ? "flex-end" : "flex-start",
+      marginBottom: 8
+    }}
+  >
+
+    {/* メッセージ本体 */}
+    <div style={{
+      display: "flex",
+      justifyContent: isMe ? "flex-end" : "flex-start",
+      alignItems: "flex-end",
+      gap: 6,
+      maxWidth: "80%"
+    }}>
+      <div style={isMe ? myBubble : theirBubble}>
+        {m.text}
+      </div>
+    </div>
+
+    {/* 既読表示 */}
+    {isMe && (
+      <div style={{
+        fontSize: 10,
+        color: "#888",
+        marginTop: 2,
+        paddingRight: 4
+      }}>
+        {m.read ? "既読" : "送信済み"}
+      </div>
+    )}
+
+  </div>
+);
         
        {/* 相手のアバター（左側に表示） */}
 {!isMe && (
@@ -310,12 +338,26 @@ useEffect(() => {
               border: isMe ? "none" : "1px solid #e0ede5",
             }}
           />
-        ) : (
+       ) : (
           /* ── テキストメッセージ */
           <div style={isMe ? myBubble : theirBubble}>
             {m.text}
           </div>
         )}
+
+        {/* 既読 / 送信済み表示（自分のメッセージのみ） */}
+        {isMe && (
+          <div style={{
+            fontSize: 10,
+            color: "#888",
+            alignSelf: "flex-end",
+            marginBottom: 2,
+            whiteSpace: "nowrap"
+          }}>
+            {m.read ? "既読" : "送信済み"}
+          </div>
+        )}
+
       </div>
     );
   };
