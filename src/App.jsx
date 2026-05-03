@@ -587,17 +587,20 @@ const formatTime = (ts) => {
     if (!m.uid) return;
     const chatId = [currentUser.uid, m.uid].sort().join("_");
     onValue(ref(db, "chats/" + chatId + "/messages"), (snap) => {
-      if (!snap.exists()) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
-      const msgs = Object.values(snap.val() || {}).filter(Boolean);
-      if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+  if (!snap.exists()) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+  const msgs = Object.values(snap.val() || {}).filter(Boolean);
+  if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
 
-      // 相手からの未読メッセージが1件でもあれば未読扱い
-      const unread = msgs.some(
-        msg => msg.senderUid !== currentUser.uid && !msg.read
-      );
+  console.log("msgs:", msgs.map(msg => ({ senderUid: msg.senderUid, read: msg.read })));
 
-      setUnreadChats(prev => ({ ...prev, [m.uid]: unread }));
-    });
+  const unread = msgs.some(
+    msg => msg.senderUid !== currentUser.uid && msg.read !== true
+  );
+
+  console.log("unread:", unread, "uid:", m.uid);
+
+  setUnreadChats(prev => ({ ...prev, [m.uid]: unread }));
+});
   });
 };
   const sendLike = async (target) => {
