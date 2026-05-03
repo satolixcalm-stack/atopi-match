@@ -582,21 +582,24 @@ const formatTime = (ts) => {
 
 
   const loadUnreadChats = (matchesData) => {
-    if (!currentUser) return;
-    Object.values(matchesData).forEach(m => {
-      if (!m.uid) return;
-      const chatId = [currentUser.uid, m.uid].sort().join("_");
-      onValue(ref(db, "chats/" + chatId + "/messages"), (snap) => {
-        if (!snap.exists()) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
-        const msgs = Object.values(snap.val() || {}).filter(Boolean);
-        if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
-        msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-        const last = msgs[msgs.length - 1];
-        setUnreadChats(prev => ({ ...prev, [m.uid]: !!(last?.senderUid && last.senderUid !== currentUser.uid) }));
-      });
-    });
-  };
+  if (!currentUser) return;
+  Object.values(matchesData).forEach(m => {
+    if (!m.uid) return;
+    const chatId = [currentUser.uid, m.uid].sort().join("_");
+    onValue(ref(db, "chats/" + chatId + "/messages"), (snap) => {
+      if (!snap.exists()) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
+      const msgs = Object.values(snap.val() || {}).filter(Boolean);
+      if (msgs.length === 0) { setUnreadChats(prev => ({ ...prev, [m.uid]: false })); return; }
 
+      // 相手からの未読メッセージが1件でもあれば未読扱い
+      const unread = msgs.some(
+        msg => msg.senderUid !== currentUser.uid && !msg.read
+      );
+
+      setUnreadChats(prev => ({ ...prev, [m.uid]: unread }));
+    });
+  });
+};
   const sendLike = async (target) => {
     if (matches[target.uid]) return { type: "none" };
     if (myLikes[target.uid]) {
