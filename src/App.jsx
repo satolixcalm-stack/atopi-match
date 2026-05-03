@@ -693,7 +693,7 @@ chatListenersRef.current = {};
   };
 
 }, [currentUser?.uid, Object.keys(matches).length]);
-  }
+
 
   // 🔥 クリーンアップ（超重要）
  return () => {
